@@ -12,20 +12,19 @@ local exceptions = {}
 
 -- messages
 function hinting_message(target)
-return "The owner of this (or adjacent) area is " .. target .. ".\nAsk him/her for permission to change anyting here!"
+return "\nThe owner of this (or adjacent) area is " .. target .. ".\nAsk him/her for permission to change anyting here!"
 end
 
 function warning_message(target)
-return "You should'n mess with other people's stuff.\nThis one (or adjacent) belongs to " .. target .. ".\nNote, that you may be punished for this attempt."
+return "\nYou should'n mess with other people's stuff.\nThis one (or adjacent) belongs to " .. target .. ".\nNote, that you may be punished for this attempt."
 end
 
 function lastone_message(target)
-return "Do NOT mess up with what isn't yours.\nThis is " .. target .. "'s place.\nWarning! One more time and you'll be BANNED!"
+return "\nDo NOT mess up with what isn't yours.\nThis is " .. target .. "'s place.\nWarning! One more time and you'll be BANNED!"
 end
 
 function banning_message(target)
-
-return "You were banned just now.\nIf the owner would forgive you, then you may return to this server.\nOtherwise you'll have to wait for " .. time_to_forgive .. " days before you'll be able to do so."
+return "\nYou were banned just now.\nIf the owner would forgive you, then you may return to this server.\nOtherwise you'll have to wait for " .. time_to_forgive .. " days before you'll be able to do so."
 end
 
 --[[ minetest.create_detached_inventory("", callbacks)
@@ -90,6 +89,36 @@ function check_ownership(pos, placer)
 	end
 end
 
+function create_exception(owner, player, pos1, pos2)
+    if exceptions == nil
+	then exceptions = {}
+	end   
+	
+	if exceptions[player] == nil
+	then --table.insert(exceptions,player)
+	exceptions[player] = {}
+	end
+	
+	if exceptions[player].data == nil
+	then exceptions[player].data = {}
+	end
+	
+	if exceptions[player].data[owner] == nil
+	then --table.insert(exceptions[player].data,owner)
+	exceptions[player].data[owner] = {}
+	end
+
+	for key, value in ipairs(exceptions[player].data[owner])
+	local d = {p1 = pos1, p2 = pos2}
+	table.insert(exceptions[player].data[owner],d)	
+	
+    minetest.debug("\n exceptions: " ..  minetest.serialize(exceptions[player].data))	
+	minetest.chat_send_all("\n exceptions: " ..  minetest.serialize(exceptions[player].data))	
+end;
+
+function delete_exception(owner, player, pos1, pos2)
+
+end
 
 function give_a_warning_or_ban(player,owner)    
     local f = {message = "player name is nil!", ban = false}
@@ -105,30 +134,23 @@ function give_a_warning_or_ban(player,owner)
     end
     
     local found = false
-
-   minetest.debug('player: ' .. player .. '  owner:' .. owner)
-
+--   minetest.debug('player: ' .. player .. '  owner:' .. owner)
     if bans == nil 
     then bans = {} 
     end
-
-   minetest.debug("bans: " ..  minetest.serialize(bans))
-
+--   minetest.debug("bans: " ..  minetest.serialize(bans))
     if bans[player] == nil then
        table.insert(bans, player)
        bans[player] =  {}
     end
-
-   minetest.debug("bans player: " ..  minetest.serialize(bans[player]))
-
-
+--   minetest.debug("bans player: " ..  minetest.serialize(bans[player]))
     if bans[player].data == nil then
        bans[player].data = {}
        local d = {own = owner, cou = 0}  
        table.insert(bans[player].data, d)
        count = 0
        found = true
-       minetest.debug("bans player data created ... " .. minetest.serialize(bans[player].data))
+ --      minetest.debug("bans player data created ... " .. minetest.serialize(bans[player].data))
     end
 
 if not found then
@@ -137,7 +159,7 @@ if not found then
               value["cou"] = value["cou"] + 1
               count = value["cou"]
               bans[player].data[key] = value
-              minetest.debug("bans player data found ... " .. minetest.serialize(value))
+-- minetest.debug("bans player data found ... " .. minetest.serialize(value))
               found = true
               break
            end
@@ -148,7 +170,7 @@ if not found then
        local d = {own = owner, cou = 0}  
        table.insert(bans[player].data, d)
        count = 0
-       minetest.debug("creating 2 ... " .. minetest.serialize(bans))
+  --     minetest.debug("creating 2 ... " .. minetest.serialize(bans))
 
 end
 
@@ -161,13 +183,21 @@ end
 end
 
 function ban_him_or_her(name)
-    minetest.after(5000, minetest.ban_player(name))
+  --  minetest.after(5000, minetest.ban_player(name))
 
     
 end
 
 -- overriding minetest.item_place to set "ownership"
 function minetest.item_place(itemstack, placer, pointed_thing)
+    
+	create_exception("someone" ..  tostring(math.random (1,10)), 
+	                 placer:get_player_name(), 
+					 pointed_thing.under, 
+					 {x=0,y=0,z=0}
+					)
+
+					
     local pos = pointed_thing.above
     if check_ownership(pos, placer)
 	then
