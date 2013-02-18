@@ -105,15 +105,18 @@ function create_exception(owner, player, pos1, pos2)
 	
 	if exceptions[player].data[owner] == nil
 	then --table.insert(exceptions[player].data,owner)
-	exceptions[player].data[owner] = {}
+	    exceptions[player].data[owner] = {}
 	end
 
-	for key, value in ipairs(exceptions[player].data[owner])
-	local d = {p1 = pos1, p2 = pos2}
-	table.insert(exceptions[player].data[owner],d)	
-	
+
+        local d = {p1 = pos1, p2 = pos2}
+        table.insert(exceptions[player].data[owner],d)	
+
+	--for key, value in ipairs(exceptions[player].data[owner]) do 
+  -- end
+
     minetest.debug("\n exceptions: " ..  minetest.serialize(exceptions[player].data))	
-	minetest.chat_send_all("\n exceptions: " ..  minetest.serialize(exceptions[player].data))	
+--	minetest.chat_send_all("\n exceptions: " ..  minetest.serialize(exceptions[player].data))	
 end;
 
 function delete_exception(owner, player, pos1, pos2)
@@ -188,22 +191,20 @@ function ban_him_or_her(name)
     
 end
 
+
+old_place = minetest.item_place
 -- overriding minetest.item_place to set "ownership"
 function minetest.item_place(itemstack, placer, pointed_thing)
     
-	create_exception("someone" ..  tostring(math.random (1,10)), 
-	                 placer:get_player_name(), 
-					 pointed_thing.under, 
-					 {x=0,y=0,z=0}
-					)
-
-					
+	if placer:get_wielded_item():is_empty() then return end
+				
     local pos = pointed_thing.above
     if check_ownership(pos, placer)
 	then
 		local count = itemstack:get_count()
 	 	local name = itemstack:get_name()
-       	minetest.item_place_node(itemstack, placer, pointed_thing)
+
+        old_place(itemstack, placer, pointed_thing)
         local meta = minetest.env:get_meta(pos)
         meta:set_string("owner",placer:get_player_name())
         if set_infotext then meta:set_string("infotext","Owned by " .. placer:get_player_name()) end
@@ -236,9 +237,18 @@ function can_break(pos,digger)
 end
 
 
-minetest.register_on_punchnode(
-function (pos, node, puncher)
-    local meta = minetest.env:get_meta(pos)
+minetest.register_on_punchnode( function (pos, node, puncher)    
+-- warn with red splash & possible (by a glitch, but still) health dropdown
+    if not check_ownership_once(pos, puncher) then
+    local hp = puncher:get_hp()
+    if hp>1 then
+       puncher:set_hp(hp - 1)
+   
+       minetest.after(0.05, function()
+          puncher:set_hp(hp)
+       end)       
+    end
+    end
 end
 )
 
@@ -297,8 +307,107 @@ minetest.register_node("shared_autoban:rule_em_all_node", {
 		node_box = {
 			type = "fixed",
 			fixed = nodebox_PC,
-            }			
+            },
+
+   on_rightclick = function (pos, node, clicker, itemstack)
+ 		local meta = minetest.env:get_meta(pos)
+		meta:set_string("formspec",
+				"size[8,9]"..
+				"label[0,0,Pos1 = { x = ".. tostring(clicker.pos1.x) ..
+                                 ", y = ".. tostring(clicker.pos1.y) ..
+                                 ", z = ".. tostring(clicker.pos1.z) ..
+                                 "},]"..
+				"label[0,0,Pos2 = { x = ".. tostring(clicker.pos2.x) ..
+                                 ", y = ".. tostring(clicker.pos2.y) ..
+                                 ", z = ".. tostring(clicker.pos2.z) ..
+                                 "},]")     
+       
+   end,			
 })
+
+
+function add_field_for_ex(pl)
+   pl:set_properties{
+   pos1 = {0,0,0},
+   pos2 = {0,0,0},
+   first = true,
+}
+    minetest.debug(minetest.serialize(pl:get_properties()))
+
+end
+
+
+minetest.register_item("shared_autoban:markup_pencil", {
+	type = "none",
+	wield_image = "pencil.png",
+	wield_scale = {x=1,y=1,z=1},
+	tool_capabilities = {
+		full_punch_interval = 0.1,
+		max_drop_level = 0,
+        stack_max = 99,
+        liquids_pointable = true,
+		groupcaps = {
+			fleshy = {times={[2]=100, [3]=100}, uses=50, maxlevel=3},
+			crumbly = {times={[2]=100, [3]=100}, uses=50, maxlevel=3},
+			snappy = {times={[3]=100}, uses=50, maxlevel=3},
+		}
+	},
+
+	on_use = function(itemstack, user, pointed_thing)		
+		if pointed_thing.type ~= "node" then
+			return
+		end
+		pos = pointed_thing.under
+        if user.first 
+        then user:set_properties{pos1 = n,}
+        else user:set_properties{pos2 = n,}
+        end
+
+	end,
+
+--[[
+	create_exception("someone" ..  tostring(math.random (1,10)), 
+	                 placer:get_player_name(), 
+					 pointed_thing.under, 
+					 pointed_thing.above
+					)
+
+]]--
+})
+
+minetest.register_craft({
+	output = 'shared_autoban:markup_pencil',
+	recipe = {
+		{'',              'shared_autoban:coal_dust',   ''},
+		{'default:stick', 'shared_autoban:coal_dust', 'default:stick'},
+		{'default:stick', 'shared_autoban:coal_dust', 'default:stick'},
+	}
+})
+
+
+minetest.register_craft({
+	output = 'shared_autoban:coal_dust',
+	recipe = {
+		{'default:coal_lump'},
+	}
+})
+
+
+minetest.register_craftitem("shared_autoban:coal_dust", {
+	description = "Coal Dust",
+	inventory_image = "coal_dust.png",
+})
+
+minetest.register_on_joinplayer(add_field_for_ex)
+
+
+
+
+
+
+
+
+
 
 
 
