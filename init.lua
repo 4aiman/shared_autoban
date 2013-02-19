@@ -9,6 +9,8 @@ local time_to_forgive = 30
 local bans = {}
 -- used for storing list of permitted areas
 local exceptions = {}
+-- used for storing pos1 & pos2 (those are used to make exceptions)
+local ex_pos = {}
 
 -- messages
 function hinting_message(target)
@@ -196,7 +198,7 @@ old_place = minetest.item_place
 -- overriding minetest.item_place to set "ownership"
 function minetest.item_place(itemstack, placer, pointed_thing)
     
-	if placer:get_wielded_item():is_empty() then return end
+--	if placer:get_wielded_item():is_empty() then return end
 				
     local pos = pointed_thing.above
     if check_ownership(pos, placer)
@@ -294,6 +296,7 @@ local nodebox_PC = {
 minetest.register_node("shared_autoban:rule_em_all_node", {
     drawtype = "nodebox",
     tile_images = {"top.png","sides.png","sides.png","sides.png","back.png","front.png"},    
+--    tile_images = {"top.png","bottom.png","tor1.png","tor2.png","tor.png","tor.png"},    
     paramtype = "light",        
     paramtype2 = "facedir",  
     walkable = true,
@@ -311,30 +314,34 @@ minetest.register_node("shared_autoban:rule_em_all_node", {
 
    on_rightclick = function (pos, node, clicker, itemstack)
  		local meta = minetest.env:get_meta(pos)
-		meta:set_string("formspec",
-				"size[8,9]"..
-				"label[0,0,Pos1 = { x = ".. tostring(clicker.pos1.x) ..
-                                 ", y = ".. tostring(clicker.pos1.y) ..
-                                 ", z = ".. tostring(clicker.pos1.z) ..
-                                 "},]"..
-				"label[0,0,Pos2 = { x = ".. tostring(clicker.pos2.x) ..
-                                 ", y = ".. tostring(clicker.pos2.y) ..
-                                 ", z = ".. tostring(clicker.pos2.z) ..
-                                 "},]")     
+
+        local name = clicker:get_player_name()
+        if name ~= "" then
+           if ex_pos[name] == nil then
+              return
+           else   
+                meta:set_string("formspec",
+				"size[8,6]"..
+				"label[0,0,Pos1 = ".. minetest.pos_to_string(ex_pos[name].pos1) .. "],"..
+				"label[0,1,Pos2 = ".. minetest.pos_to_string(ex_pos[name].pos2) .. "]"
+				)
+
+           end   
+        end 
+ 		
+--[[
+	create_exception("someone" ..  tostring(math.random (1,10)), 
+	                 placer:get_player_name(), 
+					 pointed_thing.under, 
+
+					 pointed_thing.above
+					)
+
+]]--
        
    end,			
+   
 })
-
-
-function add_field_for_ex(pl)
-   pl:set_properties{
-   pos1 = {0,0,0},
-   pos2 = {0,0,0},
-   first = true,
-}
-    minetest.debug(minetest.serialize(pl:get_properties()))
-
-end
 
 
 minetest.register_item("shared_autoban:markup_pencil", {
@@ -345,34 +352,36 @@ minetest.register_item("shared_autoban:markup_pencil", {
 		full_punch_interval = 0.1,
 		max_drop_level = 0,
         stack_max = 99,
-        liquids_pointable = true,
-		groupcaps = {
-			fleshy = {times={[2]=100, [3]=100}, uses=50, maxlevel=3},
-			crumbly = {times={[2]=100, [3]=100}, uses=50, maxlevel=3},
-			snappy = {times={[3]=100}, uses=50, maxlevel=3},
-		}
+        liquids_pointable = false,
+
 	},
 
 	on_use = function(itemstack, user, pointed_thing)		
-		if pointed_thing.type ~= "node" then
-			return
-		end
 		pos = pointed_thing.under
+   
+   
         if user.first 
         then user:set_properties{pos1 = n,}
         else user:set_properties{pos2 = n,}
         end
 
+        local name = user:get_player_name()
+        if name ~= "" then
+           if ex_pos[name] == nil then
+              ex_pos[name] = {}
+              ex_pos[name].first = true
+           end   
+           if ex_pos[name].first then
+              ex_pos[name].pos1 = pos              
+              minetest.chat_send_player(name,'Start pos set to ' .. minetest.pos_to_string(pos))
+           else
+              ex_pos[name].pos2 = pos               
+              minetest.chat_send_player(name,'End pos set to ' .. minetest.pos_to_string(pos))
+           end           
+           ex_pos[name].first = not ex_pos[name].first
+        end
+
 	end,
-
---[[
-	create_exception("someone" ..  tostring(math.random (1,10)), 
-	                 placer:get_player_name(), 
-					 pointed_thing.under, 
-					 pointed_thing.above
-					)
-
-]]--
 })
 
 minetest.register_craft({
@@ -398,7 +407,7 @@ minetest.register_craftitem("shared_autoban:coal_dust", {
 	inventory_image = "coal_dust.png",
 })
 
-minetest.register_on_joinplayer(add_field_for_ex)
+--minetest.register_on_joinplayer(add_field_for_ex)
 
 
 
