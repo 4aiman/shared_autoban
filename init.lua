@@ -117,7 +117,7 @@ function create_exception(owner, player, pos1, pos2)
 	--for key, value in ipairs(exceptions[player].data[owner]) do 
   -- end
 
-    minetest.debug("\n exceptions: " ..  minetest.serialize(exceptions[player].data))	
+    minetest.debug("\n exceptions: " ..  minetest.serialize(exceptions))	
 --	minetest.chat_send_all("\n exceptions: " ..  minetest.serialize(exceptions[player].data))	
 end;
 
@@ -202,7 +202,7 @@ function minetest.item_place(itemstack, placer, pointed_thing)
 				
     local pos = pointed_thing.above
     if check_ownership(pos, placer)
-	then
+	then	    
 		local count = itemstack:get_count()
 	 	local name = itemstack:get_name()
 
@@ -225,7 +225,7 @@ function minetest.item_place(itemstack, placer, pointed_thing)
               ban_him_or_her(name)                        
            end
 		return 
-    end		
+    end			
 end
 
 -- check for breaking possibility 
@@ -301,7 +301,7 @@ minetest.register_node("shared_autoban:rule_em_all_node", {
     paramtype2 = "facedir",  
     walkable = true,
     inventory_image = "default_cobble.png",
-    groups = {dig_immediate=2},
+    groups = {dig_immediate=2, bouncy=100},
     description = "Permissions ruler!",
 		selection_box = {
 			type = "fixed",
@@ -311,33 +311,87 @@ minetest.register_node("shared_autoban:rule_em_all_node", {
 			type = "fixed",
 			fixed = nodebox_PC,
             },
-
+			
+		
+   after_place_node = function(pos, placer, itemstack)
+   local meta = minetest.env:get_meta(pos)
+    meta:set_string("formspec",
+				"size[8,6]"..	            
+				"label[0,0;Pos1 undefined]"..
+				"label[0,1;Pos2 undefined]"
+				)   
+   end, 
+				
+   on_punch = function(pos, node, puncher)        
+ 		local meta = minetest.env:get_meta(pos)
+        local name = puncher:get_player_name()
+        if name ~= "" then
+           if ex_pos[name] == nil then
+              return
+           end
+		   
+		   if (ex_pos[name].pos1  == nil) 
+		   or (ex_pos[name].pos1 == nil) 
+		   then return
+		   end
+              		   
+		   --[[	local list = ''
+				for i,v in ipairs(minetest.get_connected_players()) do
+				    list = list..'\n' .. v:get_player_name()
+				end]]--
+				
+                meta:set_string("formspec",
+                "size[6,4]"..	            
+				"label[0,0;Selected area:]"..
+				"label[0,0.5;Pos1 = ".. minetest.pos_to_string(ex_pos[name].pos1) .. "]"..
+				"label[0,1;Pos2 = ".. minetest.pos_to_string(ex_pos[name].pos2) .. "]"..
+				"field[3,0.65;3,1;username;Grant interact to:;]"..
+				"button[2,2;2,1;submit;Submit]"
+				)				
+				-- ".. list .. "
+           
+        end 
+       
+   end,
+   
+   on_receive_fields = function(pos, formname, fields, sender)
+      if fields.submit then
+           if ex_pos[sender:get_player_name()] == nil then
+              return
+           end
+		   
+		   if (ex_pos[sender:get_player_name()].pos1 == nil) 
+		   or (ex_pos[sender:get_player_name()].pos2 == nil) 
+		   then return
+		   end
+		   
+         create_exception(fields.username, sender:get_player_name(), 
+					 ex_pos[sender:get_player_name()].pos1,
+                     ex_pos[sender:get_player_name()].pos2
+					)    
+	  end	  
+   end,
+	 
    on_rightclick = function (pos, node, clicker, itemstack)
+        minetest.chat_send_all("Testing!")
  		local meta = minetest.env:get_meta(pos)
 
         local name = clicker:get_player_name()
         if name ~= "" then
            if ex_pos[name] == nil then
               return
-           else   
+           else  
                 meta:set_string("formspec",
 				"size[8,6]"..
-				"label[0,0,Pos1 = ".. minetest.pos_to_string(ex_pos[name].pos1) .. "],"..
-				"label[0,1,Pos2 = ".. minetest.pos_to_string(ex_pos[name].pos2) .. "]"
+	            "label[1,3;Power level]"..				
+				"label[0,1;Pos1 = ".. minetest.pos_to_string(ex_pos[name].pos1) .. "],"..
+				"label[0,0;Pos2 = ".. minetest.pos_to_string(ex_pos[name].pos2) .. "]"
 				)
-
+				
            end   
         end 
  		
---[[
-	create_exception("someone" ..  tostring(math.random (1,10)), 
-	                 placer:get_player_name(), 
-					 pointed_thing.under, 
 
-					 pointed_thing.above
-					)
-
-]]--
        
    end,			
    
@@ -352,14 +406,13 @@ minetest.register_item("shared_autoban:markup_pencil", {
 		full_punch_interval = 0.1,
 		max_drop_level = 0,
         stack_max = 99,
-        liquids_pointable = false,
-
+        liquids_pointable = false,        
 	},
 
 	on_use = function(itemstack, user, pointed_thing)		
 		pos = pointed_thing.under
-   
-   
+        if pos == nil then return end  
+        
         if user.first 
         then user:set_properties{pos1 = n,}
         else user:set_properties{pos2 = n,}
@@ -374,11 +427,12 @@ minetest.register_item("shared_autoban:markup_pencil", {
            if ex_pos[name].first then
               ex_pos[name].pos1 = pos              
               minetest.chat_send_player(name,'Start pos set to ' .. minetest.pos_to_string(pos))
+			  ex_pos[name].first = not ex_pos[name].first
            else
               ex_pos[name].pos2 = pos               
               minetest.chat_send_player(name,'End pos set to ' .. minetest.pos_to_string(pos))
+			  ex_pos[name].first = not ex_pos[name].first
            end           
-           ex_pos[name].first = not ex_pos[name].first
         end
 
 	end,
