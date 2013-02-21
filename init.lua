@@ -61,11 +61,10 @@ function check_ownership_once(pos, pl)
    or meta:get_string("owner") == nil
    or meta:get_string("owner") == ""
    or minetest.env:get_node(pos).name == "air"
+   or check_exception(pl:get_player_name(), pos)
    then
-      if show_debug_messages then minetest.chat_send_player(placer:get_player_name(), "Ours: " .. minetest.serialize(pos)) end
       return true -- if it's not ours
    else
-      if show_debug_messages then minetest.chat_send_player(placer:get_player_name(), "Not ours: " .. minetest.serialize(pos)) end
       return false  -- if it IS ours
    end 
 end
@@ -96,6 +95,8 @@ function create_exception(owner, player, pos1, pos2)
 	then exceptions = {}
 	end   
 	
+	--fields.username, sender:get_player_name(),
+	
 	if exceptions[player] == nil
 	then --table.insert(exceptions,player)
 	exceptions[player] = {}
@@ -107,19 +108,51 @@ function create_exception(owner, player, pos1, pos2)
 	
 	if exceptions[player].data[owner] == nil
 	then --table.insert(exceptions[player].data,owner)
-	    exceptions[player].data[owner] = {}
+        exceptions[player].data[owner] = {}
 	end
 
-
         local d = {p1 = pos1, p2 = pos2}
-        table.insert(exceptions[player].data[owner],d)	
+        table.insert(exceptions[player].data[owner],d)	        
 
-	--for key, value in ipairs(exceptions[player].data[owner]) do 
-  -- end
-
-    minetest.debug("\n exceptions: " ..  minetest.serialize(exceptions))	
---	minetest.chat_send_all("\n exceptions: " ..  minetest.serialize(exceptions[player].data))	
 end;
+
+
+function check_exception(player, pos)
+    if exceptions == nil
+	then 
+	     return false
+	end   
+	
+	if exceptions[player] == nil
+	then 
+	     return false	
+	end
+	
+	if exceptions[player].data == nil
+	then
+	     return false
+	end
+	
+    for i,v in pairs(exceptions[player].data) do
+
+        if i == player then    
+           for j,m in pairs(v) do
+               if  (math.min(m.p1.x,m.p2.x)<=pos.x) 
+               and (pos.x<=math.max(m.p1.x,m.p2.x))
+               and (math.min(m.p1.y,m.p2.y)<=pos.y) 
+               and (pos.y<=math.max(m.p1.y,m.p2.y))
+               and (math.min(m.p1.z,m.p2.z)<=pos.z) 
+               and (pos.z<=math.max(m.p1.z,m.p2.z))
+               then 
+                   return true 
+               end
+           end 
+        end
+
+	end
+return false
+end;
+
 
 function delete_exception(owner, player, pos1, pos2)
 
@@ -139,23 +172,19 @@ function give_a_warning_or_ban(player,owner)
     end
     
     local found = false
---   minetest.debug('player: ' .. player .. '  owner:' .. owner)
     if bans == nil 
     then bans = {} 
     end
---   minetest.debug("bans: " ..  minetest.serialize(bans))
     if bans[player] == nil then
        table.insert(bans, player)
        bans[player] =  {}
     end
---   minetest.debug("bans player: " ..  minetest.serialize(bans[player]))
     if bans[player].data == nil then
        bans[player].data = {}
        local d = {own = owner, cou = 0}  
        table.insert(bans[player].data, d)
        count = 0
        found = true
- --      minetest.debug("bans player data created ... " .. minetest.serialize(bans[player].data))
     end
 
 if not found then
@@ -164,7 +193,6 @@ if not found then
               value["cou"] = value["cou"] + 1
               count = value["cou"]
               bans[player].data[key] = value
--- minetest.debug("bans player data found ... " .. minetest.serialize(value))
               found = true
               break
            end
@@ -175,7 +203,6 @@ if not found then
        local d = {own = owner, cou = 0}  
        table.insert(bans[player].data, d)
        count = 0
-  --     minetest.debug("creating 2 ... " .. minetest.serialize(bans))
 
 end
 
@@ -188,18 +215,14 @@ end
 end
 
 function ban_him_or_her(name)
-  --  minetest.after(5000, minetest.ban_player(name))
-
-    
+--    minetest.after(5000, minetest.ban_player(name))    
 end
 
 
 old_place = minetest.item_place
 -- overriding minetest.item_place to set "ownership"
-function minetest.item_place(itemstack, placer, pointed_thing)
-    
---	if placer:get_wielded_item():is_empty() then return end
-				
+function minetest.item_place(itemstack, placer, pointed_thing)    
+--	if placer:get_wielded_item():is_empty() then return end				
     local pos = pointed_thing.above
     if check_ownership(pos, placer)
 	then	    
@@ -218,9 +241,6 @@ function minetest.item_place(itemstack, placer, pointed_thing)
            local name = placer:get_player_name()
            local x = give_a_warning_or_ban(name,owner)
 
-           if show_messages then 
-               minetest.chat_send_player(name,x.message) 
-           end    
            if x.ban then
               ban_him_or_her(name)                        
            end
@@ -241,6 +261,8 @@ end
 
 minetest.register_on_punchnode( function (pos, node, puncher)    
 -- warn with red splash & possible (by a glitch, but still) health dropdown
+    if check_exception(puncher:get_player_name(), pos) then minetest.chat_send_all("true") else  minetest.chat_send_all("false")  end
+
     if not check_ownership_once(pos, puncher) then
     local hp = puncher:get_hp()
     if hp>1 then
@@ -265,14 +287,10 @@ function minetest.node_dig(pos, node, digger)
        local owner = meta:get_string("owner") or "someone"
        local x= give_a_warning_or_ban(name,owner)
 
-       if show_messages then             
           if x.ban then 
-             minetest.chat_send_player(name,x.message) 
              ban_him_or_her(name) 
-          else
-            minetest.chat_send_player(name,x.message)              
           end        
-       end
+
        return 
    else 
        do_dig_node(pos, node, digger)
@@ -334,11 +352,6 @@ minetest.register_node("shared_autoban:rule_em_all_node", {
 		   or (ex_pos[name].pos1 == nil) 
 		   then return
 		   end
-              		   
-		   --[[	local list = ''
-				for i,v in ipairs(minetest.get_connected_players()) do
-				    list = list..'\n' .. v:get_player_name()
-				end]]--
 				
                 meta:set_string("formspec",
                 "size[6,4]"..	            
@@ -368,12 +381,17 @@ minetest.register_node("shared_autoban:rule_em_all_node", {
          create_exception(fields.username, sender:get_player_name(), 
 					 ex_pos[sender:get_player_name()].pos1,
                      ex_pos[sender:get_player_name()].pos2
-					)    
+					) 
+					if pos ~=nil then   
+
+			check_exception(sender:get_player_name(), pos)		
+
+			end
 	  end	  
    end,
 	 
    on_rightclick = function (pos, node, clicker, itemstack)
-        minetest.chat_send_all("Testing!")
+
  		local meta = minetest.env:get_meta(pos)
 
         local name = clicker:get_player_name()
@@ -401,6 +419,7 @@ minetest.register_node("shared_autoban:rule_em_all_node", {
 minetest.register_item("shared_autoban:markup_pencil", {
 	type = "none",
 	wield_image = "pencil.png",
+    inventory_image = "pencil.png",
 	wield_scale = {x=1,y=1,z=1},
 	tool_capabilities = {
 		full_punch_interval = 0.1,
