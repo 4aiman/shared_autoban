@@ -32,12 +32,18 @@ Q: If I can't place a block directly next to someone else's block, then where I 
 
 A: You can't place blocks only at adjacent positions. Say, someone's block is placed at some "position".
    Then you can't place blocks only at the following positions:
-        - position = {position.x-1, position.y,   position.z  };
-        - position = {position.x+1, position.y,   position.z  };
-        - position = {position.x,   position.y-1, position.z  };
-        - position = {position.x,   position.y+1, position.z  };
-        - position = {position.x,   position.y,   position.z-1};
-        - position = {position.z,   position.y,   position.z+1}.
+        - position = {position.x-1, position.y,   position.z  }; 
+        
+        - position = {position.x+1, position.y,   position.z  }; 
+        
+        - position = {position.x,   position.y-1, position.z  }; 
+        
+        - position = {position.x,   position.y+1, position.z  }; 
+        
+        - position = {position.x,   position.y,   position.z-1}; 
+        
+        - position = {position.z,   position.y,   position.z+1}. 
+        
    That means you can place block diagonally at position like {position.x-1, position.y-1, position.z}.
 
 Q: What if someone didn't know that he tried to dig someone else's blocks? 
@@ -56,12 +62,15 @@ Q: So, what do I need to do that?
 
 A: First you must craft a "markup pencil". With that you can select areas: just punch
    any block with that tool and you would set either the start or the end position. 
-   Recipe for a pencil is as follows:
-    {'',              'shared_autoban:coal_dust',   ''           },
-		{'default:stick', 'shared_autoban:coal_dust', 'default:stick'},
-		{'default:stick', 'shared_autoban:coal_dust', 'default:stick'}.
+   Recipe for a pencil is as follows: 
+    {'',              'shared_autoban:coal_dust',   ''           }, 
+    
+		{'default:stick', 'shared_autoban:coal_dust', 'default:stick'}, 
+		
+		{'default:stick', 'shared_autoban:coal_dust', 'default:stick'}. 
 
-   Shared_autoban:coal_dust can be crafted from a coal_lump like so:
+   Shared_autoban:coal_dust can be crafted from a coal_lump like so: 
+   
    {'default:coal_lump'}
 
 Q: Why do I need that stupid pencil? Can't I live happily without it? 
@@ -73,8 +82,11 @@ Q: Okay, and just why do I need that PC of yours? Or it's optional too?
 
 A: "PC" isn't optional. PC is a node that allows you to grant or to revoke "interact" within defined positions. 
     Crafting recipe for a PC is as follows:
-  	{'default:cobble',  'default:cobble',               'default:cobble'},
-		{'default:cobble',  'shared_autoban:markup_pencil', 'default:cobble'},
+     
+  	{'default:cobble',  'default:cobble',               'default:cobble'}, 
+  	
+		{'default:cobble',  'shared_autoban:markup_pencil', 'default:cobble'}, 
+		
 		{'default:cobble',  'default:cobble',               'default:cobble'}.
 
 Q: I've made a PC , then what? 
@@ -109,12 +121,18 @@ A: Just select pos1 and pos2 so that one of them would be smaller or equal to th
    To make it simplier to understand, let's say you have granted to 4aiman (yep, that's me) "interact" 
    from {0,0,0} to {10,10,10}.
    To revoke "interact" you should set pos1 and pos2 as follows:
-      pos1 = {0,0,0} pos = {10,10,10} 
-   or
-      pos1 = {0-whatever,0-whatever,0-whatever} pos = {10+whatever,10+whatever,10+whatever} 
+      pos1 = {0,0,0} pos = {10,10,10}  
+      
    or 
-      pos1 = {0-whatever,10+whatever,0-whatever} pos = {10+whatever,0-whatever,10+whatever} 
-   etc...
+    
+      pos1 = {0-whatever,0-whatever,0-whatever} pos = {10+whatever,10+whatever,10+whatever}  
+      
+   or  
+   
+      pos1 = {0-whatever,10+whatever,0-whatever} pos = {10+whatever,0-whatever,10+whatever}  
+      
+   etc... 
+   
    As you can see above, all you really need is to select an area without paying any special attention 
    to the Pos1 and Pos2 values. Just make sure you've selected area which is bigger or equal to the "granted" one.
 
