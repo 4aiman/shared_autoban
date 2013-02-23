@@ -1,8 +1,22 @@
--- settings
+--[[
+Mod "shared_autoban" is meant for use with minetest 0.4.4 and higher.
+Compatibility with previous versions of MineTest weren't tested, but still might work.
+
+Copyright (c) 2013, 4aiman Konsorumaniakku 4aiman@inbox.ru
+
+Permission to use, copy, modify, and/or distribute this software for any purpose without fee is hereby granted, provided that the above copyright notice and this permission notice appear in all copies.
+The author preserves the right to demand a fee and/or change this license as he likes.
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+Special thanks to all authors and modders of the "protector" mod.
+]]--
+
+-- some settings:
+-- one can disable some messages by setting this to false
 local show_messages = true
-local show_debug_messages = false
+-- defines whether infotext should be set on_after_place
+-- if true, then all blocks would have "Owner is USERNAME" tip. Handy, but annoying.
 local set_infotext = false
-local time_to_forgive = 30
 
 -- some lists:
 -- used for storing number of griefing attempt
@@ -12,47 +26,50 @@ local exceptions = {}
 -- used for storing pos1 & pos2 (those are used to make exceptions)
 local ex_pos = {}
 
--- messages
+-- some messages:
+-- level one
 function hinting_message(target)
 return "\nThe owner of this (or adjacent) area is " .. target .. ".\nAsk him/her for permission to change anyting here!"
 end
-
+-- level two
 function warning_message(target)
 return "\nYou should'n mess with other people's stuff.\nThis one (or adjacent) belongs to " .. target .. ".\nNote, that you may be punished for this attempt."
 end
-
+-- level three
 function lastone_message(target)
 return "\nDo NOT mess up with what isn't yours.\nThis is " .. target .. "'s place.\nWarning! One more time and you'll be BANNED!"
 end
-
+-- -- level four: player would be banned after 5 seconds
 function banning_message(target)
-return "\nYou were banned just now.\nIf the owner would forgive you, then you may return to this server.\nOtherwise you'll have to wait for " .. time_to_forgive .. " days before you'll be able to do so."
+return "\nYou were banned just now.\nIf the owner would forgive you, then you may return to this server."
 end
 
---[[ minetest.create_detached_inventory("", callbacks)
+-- save this mod's tables
+function save_stuff()
+    local output = io.open(minetest.get_modpath('shared_autoban').."/stuff.txt", "w")
+    if output then
+       output:write(minetest.serialize(exceptions).. "\n")			
+       output:write(minetest.serialize(bans)      .. "\n")			
+       output:write(minetest.serialize(ex_pos)           )			
+       io.close(output)
+    end
 
-{
-allow_move = func(inv, from_list, from_index, to_list, to_index, count, player),
-    ^ Called when a player wants to move items inside the inventory
-^ Return value: number of items allowed to move
+end
 
-    allow_put = func(inv, listname, index, stack, player),
-    ^ Called when a player wants to put something into the inventory
-^ Return value: number of items allowed to put
-^ Return value: -1: Allow and don't modify item count in inventory
-   
-    allow_take = func(inv, listname, index, stack, player),
-    ^ Called when a player wants to take something out of the inventory
-^ Return value: number of items allowed to take
-^ Return value: -1: Allow and don't modify item count in inventory
-
-on_move = func(inv, from_list, from_index, to_list, to_index, count, player),
-    on_put = func(inv, listname, index, stack, player),
-    on_take = func(inv, listname, index, stack, player),
-^ Called after the actual action has happened, according to what was allowed.
-^ No return value
-}
-]]
+-- save this mod's tables
+function load_stuff()
+    local input = io.open(minetest.get_modpath('shared_autoban').."/stuff.txt", "r")
+    if input then
+       local r = input:read("*l")			                 
+          exceptions = minetest.deserialize(r)       
+       r = input:read("*l")			
+           bans = minetest.deserialize(r)
+       
+       r = input:read("*l")						
+           ex_pos = minetest.deserialize(r)       
+       io.close(input)
+    end    
+end
 
 -- check for ownership at given pos only
 function check_ownership_once(pos, pl)   
@@ -61,7 +78,7 @@ function check_ownership_once(pos, pl)
    or meta:get_string("owner") == nil
    or meta:get_string("owner") == ""
    or minetest.env:get_node(pos).name == "air"
-   or check_exception(pl:get_player_name(), pos)
+   or check_exception(meta:get_string("owner"), pl:get_player_name(), pos)
    then
       return true -- if it's not ours
    else
@@ -69,7 +86,7 @@ function check_ownership_once(pos, pl)
    end 
 end
 
--- check for ownership at given pos and adjasent ones
+-- check for ownership at positions adjacent to pos
 -- no diagonal, though - it would be unjust to claim those too
 function check_ownership(pos, placer)
     local phoney_pos_left = {x = pos.x-1, y = pos.y, z = pos.z}
@@ -90,74 +107,133 @@ function check_ownership(pos, placer)
 	end
 end
 
+-- allows owner to grant "interact" within his/her territory 
+-- (has nothing to do with "interact" priv)
 function create_exception(owner, player, pos1, pos2)
     if exceptions == nil
-	then exceptions = {}
-	end   
-	
-	--fields.username, sender:get_player_name(),
-	
-	if exceptions[player] == nil
-	then --table.insert(exceptions,player)
-	exceptions[player] = {}
-	end
-	
-	if exceptions[player].data == nil
-	then exceptions[player].data = {}
-	end
-	
-	if exceptions[player].data[owner] == nil
-	then --table.insert(exceptions[player].data,owner)
-        exceptions[player].data[owner] = {}
-	end
-
-        local d = {p1 = pos1, p2 = pos2}
-        table.insert(exceptions[player].data[owner],d)	        
-
-end;
-
-
-function check_exception(player, pos)
-    if exceptions == nil
 	then 
-	     return false
+	    exceptions = {}
 	end   
 	
 	if exceptions[player] == nil
 	then 
-	     return false	
+        exceptions[player] = {}
 	end
 	
 	if exceptions[player].data == nil
 	then
-	     return false
+	    exceptions[player].data = {}
 	end
 	
-    for i,v in pairs(exceptions[player].data) do
+	if exceptions[player].data[owner] == nil
+	then
+        exceptions[player].data[owner] = {}
+	end
 
-        if i == player then    
-           for j,m in pairs(v) do
-               if  (math.min(m.p1.x,m.p2.x)<=pos.x) 
-               and (pos.x<=math.max(m.p1.x,m.p2.x))
-               and (math.min(m.p1.y,m.p2.y)<=pos.y) 
-               and (pos.y<=math.max(m.p1.y,m.p2.y))
-               and (math.min(m.p1.z,m.p2.z)<=pos.z) 
-               and (pos.z<=math.max(m.p1.z,m.p2.z))
-               then 
-                   return true 
+    local d = {p1 = pos1, p2 = pos2}
+    table.insert(exceptions[player].data[owner],d)	   
+    save_stuff()     
+end;
+
+-- checks for an exception at the given pos
+-- return true if owner has granted player to build/break at pos
+-- otherwise returns false
+function check_exception(owner, player, pos)
+    if exceptions == nil
+	then 
+	     return false
+	end   
+	
+	if owner == nil 
+	then
+	    return true
+	end
+	
+	if player == nil 
+	then
+	    return false
+	end
+	
+	if pos == nil 
+	then
+	    return false
+	end
+
+	for q,w in pairs (exceptions) do
+	    if q == owner then
+           for i,v in pairs(w.data) do
+               if i == player then    
+                  for j,m in pairs(v) do
+                      if  (math.min(m.p1.x,m.p2.x)<=pos.x) 
+                      and (pos.x<=math.max(m.p1.x,m.p2.x))
+                      and (math.min(m.p1.y,m.p2.y)<=pos.y) 
+                      and (pos.y<=math.max(m.p1.y,m.p2.y))
+                      and (math.min(m.p1.z,m.p2.z)<=pos.z) 
+                      and (pos.z<=math.max(m.p1.z,m.p2.z))
+                      then 
+                          return true 
+                      end
+                  end 
                end
-           end 
-        end
-
+           end
+        end 
 	end
 return false
 end;
 
+-- removes "interact" granted by owner to a player 
+-- deletes ANY exception rule for player within 
+-- min(pos1,pos2) to max(pos1,pos2)
+function remove_exception(owner, player, pos1, pos2)
+    if exceptions == nil then minetest.debug("exceptions is nil") return end   	
+	if owner == nil      then minetest.debug("owner is nil     ") return end	
+	if player == nil     then minetest.debug("playername is nil") return end	
+	if pos1 == nil       then minetest.debug("pos1 is nil      ") return end
+	if pos2 == nil       then minetest.debug("pos2 is nil      ") return end
+	for q,w in pairs (exceptions) do
+        if q == owner then	      
+           for i,v in pairs(w.data) do
+               if i == player then    
+                  for j,m in pairs(v) do                      
 
-function delete_exception(owner, player, pos1, pos2)
+                   local maxposx = math.max(pos1.x,pos2.x)
+                   local minposx = math.min(pos1.x,pos2.x) 
+                   local maxposy = math.max(pos1.y,pos2.y)
+                   local minposy = math.min(pos1.y,pos2.y) 
+                   local maxposz = math.max(pos1.z,pos2.z)
+                   local minposz = math.min(pos1.z,pos2.z) 
 
+                   local maxpx = math.max(m.p1.x,m.p2.x)
+                   local minpx = math.min(m.p1.x,m.p2.x) 
+                   local maxpy = math.max(m.p1.y,m.p2.y)
+                   local minpy = math.min(m.p1.y,m.p2.y) 
+                   local maxpz = math.max(m.p1.z,m.p2.z)
+                   local minpz = math.min(m.p1.z,m.p2.z) 
+                   
+                      if  maxposx >= maxpx
+                      and maxposy >= maxpy
+                      and maxposz >= maxpz
+                      and minposx >= minpx
+                      and minposy >= minpy
+                      and minposz >= minpz
+                      then    
+                          exceptions[q].data[i][j] =nil 
+                          save_stuff()
+                          return
+                      end
+                  end 
+
+               end
+           end
+        end 
+	end
+	
 end
 
+-- checks for how many attempts to build/destroy at owner's place
+-- were made by a certain player
+-- returns a message and a boolean value, showing
+-- whether that player should be banned or not yet
 function give_a_warning_or_ban(player,owner)    
     local f = {message = "player name is nil!", ban = false}
     if player == nil then 
@@ -211,16 +287,20 @@ end
     elseif count == 2 then x = {message = lastone_message(owner), ban = false}
     elseif count  > 2 then x = {message = banning_message(owner), ban = true}
     end
+    save_stuff()
     return x 
 end
 
+-- bans a player by the name "name" after 5 seconds 
 function ban_him_or_her(name)
---    minetest.after(5000, minetest.ban_player(name))    
+    minetest.after(5000, minetest.ban_player(name))    
 end
 
 
+-- remember good old minetest.item_place 
 old_place = minetest.item_place
--- overriding minetest.item_place to set "ownership"
+
+-- 'cause we would override that to set "ownership"
 function minetest.item_place(itemstack, placer, pointed_thing)    
 --	if placer:get_wielded_item():is_empty() then return end				
     local pos = pointed_thing.above
@@ -240,15 +320,18 @@ function minetest.item_place(itemstack, placer, pointed_thing)
            local owner = meta:get_string("owner") or "someone"     
            local name = placer:get_player_name()
            local x = give_a_warning_or_ban(name,owner)
-
+           if show_messages then
+               minetest.chat_send_player(name,x.message)
+           end 
            if x.ban then
               ban_him_or_her(name)                        
            end
+           
 		return 
     end			
 end
 
--- check for breaking possibility 
+-- checks whether digger can dig at pos
 -- useless alias to check_ownership_once ;)
 function can_break(pos,digger)
     if check_ownership_once(pos, digger) then
@@ -258,16 +341,12 @@ function can_break(pos,digger)
     end  
 end
 
-
+-- warns with red splash & possible (by a glitch, but still) health dropdown
 minetest.register_on_punchnode( function (pos, node, puncher)    
--- warn with red splash & possible (by a glitch, but still) health dropdown
-    if check_exception(puncher:get_player_name(), pos) then minetest.chat_send_all("true") else  minetest.chat_send_all("false")  end
-
     if not check_ownership_once(pos, puncher) then
     local hp = puncher:get_hp()
     if hp>1 then
-       puncher:set_hp(hp - 1)
-   
+       puncher:set_hp(hp - 1)   
        minetest.after(0.05, function()
           puncher:set_hp(hp)
        end)       
@@ -276,9 +355,11 @@ minetest.register_on_punchnode( function (pos, node, puncher)
 end
 )
 
+-- remember good old minetest.node_dig 
 local do_dig_node = minetest.node_dig 
 
-
+-- 'cause we would override that to add some checks 
+-- and prohibit to dig if necessary
 function minetest.node_dig(pos, node, digger)
    if not can_break(pos,digger) 
    then 
@@ -286,18 +367,19 @@ function minetest.node_dig(pos, node, digger)
        local name = digger:get_player_name()
        local owner = meta:get_string("owner") or "someone"
        local x= give_a_warning_or_ban(name,owner)
-
+           if show_messages then
+               minetest.chat_send_player(name,x.message)
+           end 
           if x.ban then 
              ban_him_or_her(name) 
           end        
-
        return 
    else 
        do_dig_node(pos, node, digger)
    end
 end
 
-
+-- nodebox for a control PC
 local nodebox_PC = {
 	--screen back
     {-0.4, -0.2, 0.3, 0.4, 0.3, 0.4},
@@ -311,10 +393,10 @@ local nodebox_PC = {
     {-0.5, -0.5, -0.4,  0.5, -0.4, 0.1},
 }
 
+-- PC node definition
 minetest.register_node("shared_autoban:rule_em_all_node", {
     drawtype = "nodebox",
     tile_images = {"top.png","sides.png","sides.png","sides.png","back.png","front.png"},    
---    tile_images = {"top.png","bottom.png","tor1.png","tor2.png","tor.png","tor.png"},    
     paramtype = "light",        
     paramtype2 = "facedir",  
     walkable = true,
@@ -329,7 +411,6 @@ minetest.register_node("shared_autoban:rule_em_all_node", {
 			type = "fixed",
 			fixed = nodebox_PC,
             },
-			
 		
    after_place_node = function(pos, placer, itemstack)
    local meta = minetest.env:get_meta(pos)
@@ -352,70 +433,44 @@ minetest.register_node("shared_autoban:rule_em_all_node", {
 		   or (ex_pos[name].pos1 == nil) 
 		   then return
 		   end
-				
-                meta:set_string("formspec",
-                "size[6,4]"..	            
-				"label[0,0;Selected area:]"..
-				"label[0,0.5;Pos1 = ".. minetest.pos_to_string(ex_pos[name].pos1) .. "]"..
-				"label[0,1;Pos2 = ".. minetest.pos_to_string(ex_pos[name].pos2) .. "]"..
-				"field[3,0.65;3,1;username;Grant interact to:;]"..
-				"button[2,2;2,1;submit;Submit]"
-				)				
-				-- ".. list .. "
-           
-        end 
-       
+
+           meta:set_string("formspec",
+                           "size[6,4]"..	            
+			               "field[0.5,1;3,1;p_1;Pos1:;".. minetest.pos_to_string(ex_pos[name].pos1) .. "]"..
+			               "field[0.5,2;3,1;p_2;Pos2:;".. minetest.pos_to_string(ex_pos[name].pos2) .. "]"..
+			               "field[0.5,3;3,1;username;Playername:;]"..
+			               "button[3.5,1.7;2,1;grant;Grant]"..
+			               "button[3.5,2.7;2,1;revoke;Revoke]"
+			              )				
+        end        
    end,
    
    on_receive_fields = function(pos, formname, fields, sender)
-      if fields.submit then
-           if ex_pos[sender:get_player_name()] == nil then
-              return
-           end
-		   
-		   if (ex_pos[sender:get_player_name()].pos1 == nil) 
-		   or (ex_pos[sender:get_player_name()].pos2 == nil) 
-		   then return
-		   end
-		   
-         create_exception(fields.username, sender:get_player_name(), 
-					 ex_pos[sender:get_player_name()].pos1,
-                     ex_pos[sender:get_player_name()].pos2
-					) 
-					if pos ~=nil then   
-
-			check_exception(sender:get_player_name(), pos)		
-
-			end
+      if (fields.p_1 == nil) 
+	  or (fields.p_1 == nil) 
+	  then 
+	      return
+	  end
+	  
+	  if fields.username == nil 
+	  then 
+	      return 
+	  end
+      
+      local name = sender:get_player_name()
+      
+      if fields.grant then
+         create_exception(fields.username, name, minetest.string_to_pos(fields.p_1), minetest.string_to_pos(fields.p_2)) 
 	  end	  
-   end,
-	 
-   on_rightclick = function (pos, node, clicker, itemstack)
-
- 		local meta = minetest.env:get_meta(pos)
-
-        local name = clicker:get_player_name()
-        if name ~= "" then
-           if ex_pos[name] == nil then
-              return
-           else  
-                meta:set_string("formspec",
-				"size[8,6]"..
-	            "label[1,3;Power level]"..				
-				"label[0,1;Pos1 = ".. minetest.pos_to_string(ex_pos[name].pos1) .. "],"..
-				"label[0,0;Pos2 = ".. minetest.pos_to_string(ex_pos[name].pos2) .. "]"
-				)
-				
-           end   
-        end 
- 		
-
-       
-   end,			
-   
+      
+      if fields.revoke then
+         remove_exception(name, fields.username, minetest.string_to_pos(fields.p_1), minetest.string_to_pos(fields.p_2)) 
+      end
+      
+   end,			   
 })
 
-
+-- markup pencil definition
 minetest.register_item("shared_autoban:markup_pencil", {
 	type = "none",
 	wield_image = "pencil.png",
@@ -436,7 +491,7 @@ minetest.register_item("shared_autoban:markup_pencil", {
         then user:set_properties{pos1 = n,}
         else user:set_properties{pos2 = n,}
         end
-
+        
         local name = user:get_player_name()
         if name ~= "" then
            if ex_pos[name] == nil then
@@ -457,6 +512,7 @@ minetest.register_item("shared_autoban:markup_pencil", {
 	end,
 })
 
+-- crafting recipe for a pencil
 minetest.register_craft({
 	output = 'shared_autoban:markup_pencil',
 	recipe = {
@@ -466,7 +522,7 @@ minetest.register_craft({
 	}
 })
 
-
+-- crafting recipe for coal dust (needed to craft pencils)
 minetest.register_craft({
 	output = 'shared_autoban:coal_dust',
 	recipe = {
@@ -474,23 +530,10 @@ minetest.register_craft({
 	}
 })
 
-
+-- coal dust definition
 minetest.register_craftitem("shared_autoban:coal_dust", {
 	description = "Coal Dust",
 	inventory_image = "coal_dust.png",
 })
 
---minetest.register_on_joinplayer(add_field_for_ex)
-
-
-
-
-
-
-
-
-
-
-
-
-
+load_stuff()
