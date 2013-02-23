@@ -414,11 +414,14 @@ minetest.register_node("shared_autoban:rule_em_all_node", {
 		
    after_place_node = function(pos, placer, itemstack)
    local meta = minetest.env:get_meta(pos)
-    meta:set_string("formspec",
-				"size[8,6]"..	            
-				"label[0,0;Pos1 undefined]"..
-				"label[0,1;Pos2 undefined]"
-				)   
+           meta:set_string("formspec",
+                           "size[6,4]"..	            
+			               "field[0.5,1;3,1;p_1;Pos1:;]"..
+			               "field[0.5,2;3,1;p_2;Pos2:;]"..
+			               "field[0.5,3;3,1;username;Playername:;]"..
+			               "button[3.5,1.7;2,1;grant;Grant]"..
+			               "button[3.5,2.7;2,1;revoke;Revoke]"
+			              )	 
    end, 
 				
    on_punch = function(pos, node, puncher)        
@@ -521,6 +524,17 @@ minetest.register_craft({
 		{'default:stick', 'shared_autoban:coal_dust', 'default:stick'},
 	}
 })
+
+-- crafting recipe for a PC
+minetest.register_craft({
+	output = 'shared_autoban:rule_em_all_node',
+	recipe = {
+		{'default:cobble',  'default:cobble',               'default:cobble'},
+		{'default:cobble',  'shared_autoban:markup_pencil', 'default:cobble'},
+		{'default:cobble',  'default:cobble',               'default:cobble'},
+	}
+})
+	
 
 -- crafting recipe for coal dust (needed to craft pencils)
 minetest.register_craft({
