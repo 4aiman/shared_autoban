@@ -14,7 +14,7 @@ Digging:
 - that block now belongs to that player
 - if someone wants to destroy that block he won't succeed
 - instead of removing that block he would receive a warning message
-- he ignores that messages 3 times and the 4th would be last one - he would be banned within 5 seconds
+- he ignores that messages 3 times and the 4th would be last one - he would be banned in 5 seconds
 
 Building:
 - a certain player places a block
@@ -31,7 +31,8 @@ Questions & Answers
 Q: If I can't place a block directly next to someone else's block, then where I can do that? 
 
 A: You can't place blocks only at adjacent positions. Say, someone's block is placed at some "position".
-   Then you can't place blocks only at the following positions:
+   Then you can't place blocks only at the following positions: 
+   
         - position = {position.x-1, position.y,   position.z  }; 
         
         - position = {position.x+1, position.y,   position.z  }; 
@@ -51,7 +52,7 @@ Q: What if someone didn't know that he tried to dig someone else's blocks?
 A: Well, that's totally NOT possile. Once someone punch a block which is owned by a different person,
    he/she would see a red splash. Sometimes digger would lose 1 HP after punch, but that's only 
    if he/she insists on punching what isn't his/hers. 
-   So you see a splash as if you were punched - you know that you're at someone's place
+   So you see a splash as if you were punched - you know that you're at someone's place.
 
 Q: Okay, but what if I want to build stuff WITH someone's help? Is there any way to grant "interact" within 
    a certain area to a certain player? 
@@ -63,7 +64,8 @@ Q: So, what do I need to do that?
 A: First you must craft a "markup pencil". With that you can select areas: just punch
    any block with that tool and you would set either the start or the end position. 
    Recipe for a pencil is as follows: 
-    {'',              'shared_autoban:coal_dust',   ''           }, 
+   
+                {'',              'shared_autoban:coal_dust',   ''           }, 
     
 		{'default:stick', 'shared_autoban:coal_dust', 'default:stick'}, 
 		
@@ -71,7 +73,7 @@ A: First you must craft a "markup pencil". With that you can select areas: just 
 
    Shared_autoban:coal_dust can be crafted from a coal_lump like so: 
    
-   {'default:coal_lump'}
+                {'default:coal_lump'}
 
 Q: Why do I need that stupid pencil? Can't I live happily without it? 
 
@@ -120,7 +122,8 @@ A: Just select pos1 and pos2 so that one of them would be smaller or equal to th
    the second one would be bigger or equal to the pos2 of the granted area.
    To make it simplier to understand, let's say you have granted to 4aiman (yep, that's me) "interact" 
    from {0,0,0} to {10,10,10}.
-   To revoke "interact" you should set pos1 and pos2 as follows:
+   To revoke "interact" you should set pos1 and pos2 as follows: 
+    
       pos1 = {0,0,0} pos = {10,10,10}  
       
    or 
@@ -145,3 +148,22 @@ Q: So, if he/she had granted me "interact" and I have built something there then
    destroy/build to my block until I grant him/her "interact"? 
 
 A: Precisely so. So be nice and grant him/her "interact" too.
+
+Q: Is there any moderator tool planned?
+
+A: There is, but it would be usable only by trusted players. And I mean that - "trusted" by server community, not
+   by administration ;)
+   
+Q: So, I can build a house without changing ground and... would anyone be able to destroy the floor an d fill my
+   house with some hideous stuff?
+
+A: Sure. So make a basement for your house too. If you won't - the blockspamming would be your problem, not this mod's.
+
+Q: Can I break unowned blocks in the granted only to someone else area?
+
+A: Yes, you can.
+
+Q: If I would grant someone "interact" and then build something inside granted area - would new blocks be granted 
+   as well?
+
+A: Sure it will.
