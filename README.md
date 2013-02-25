@@ -161,9 +161,65 @@ A: Sure. So make a basement for your house too. If you won't - the blockspamming
 
 Q: Can I break unowned blocks in the granted only to someone else area?
 
-A: Yes, you can.
+A: Yes, you can. This mod do not protect not owned stuff.
 
 Q: If I would grant someone "interact" and then build something inside granted area - would new blocks be granted 
    as well?
 
-A: Sure it will.
+A: They would.
+
+Q: How many times can I violate someone's property safely?
+
+A: 9 to EACH owner. So yes, anyone may try to annoy everyone else for 9 times and still be unbanned.
+
+Q: Is there any way to change how many violations one can issue?
+
+A: Sure - just change warnings_before_ban variable in the init.lua. 
+
+Q: Why do I get messages that I can't place a block, because it's mine?
+
+A: It's a bug. I'll fix that anytime soon. If that happens, then there is a block, owned by someone else.
+   Do not insist on building, find out who is the onwner and ask him to grant you "interact". Also, try to 
+   /forgive yourself.
+   
+Q: What are you talking about? There're chatcommands available, aren't they?
+
+A: Yes, there are. One can use this commands:
+   /area_grant <playername>            - grants interact to <playername> in the selected area (use pencil)
+   /area_revoke <playername>           - revokes interact from <playername> in the selected area (use pencil)
+   /area_grant_all <playername>        - grants interact to all in the selected area (use pencil)
+   /area_revoke_all <playername>       - revokes interact from all in the selected area (use pencil)
+   /forgive <playername>               - drops violaton counter of <playername> to 0
+   /vote <playername>                  - +1 to reputation of <playername>
+   /devote <playername>                - -1 to reputation of <playername>
+   
+   /forgive will check whether there are someone else who is griefed/annoyed by <playername>. If there's no such
+            person, then <playername> have good chances to be unbanned*.
+
+   /vote is possible only 1 time for each EXISTING <playername>. 
+         So: - No, you can't "create" trusted player by yourself.
+             - Yes, even if you cooperate with someone, you can't give your votes for some inexistent person.
+
+   /devote is also possible only 1 time for each EXISTING <playername> and only if you've voted for that person.
+   
+   * It's up to settings to decide whether you'll be banned/unbanned or not. See init.lua lines 15-31.
+   
+Q: Why do I need to vote?
+
+A: There's no need in that, but if min_trust_level% would vote for someone, then he/she would be able to use
+   admin Super tools.
+   
+Q: Wow! Supertool! What's that?
+
+A: That's a pickaxe, crafted like this:
+  
+      {'default:pick_*material*'}
+      {'shared_autoban:markup_pencil'}   
+   
+   There are wooden, stone, steel and mese pickaxes. They are equal to their prototypes in all terms, but can break
+   owned by a third person blocks. (Only if it's wielder is trusted amongst server population).
+
+Q: Where can I learn more about this mod?
+
+A: Check init.lua contents. This mod is commented rather well. In fact, you could've get answers on all the questions 
+   above by doing that ;)
