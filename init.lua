@@ -1,5 +1,5 @@
 --[[
-Mod "shared_autoban" is meant for use with minetest 0.4.4 and higher.
+Mod "shared_autoban" is meant for use with minetest v0.4.4 and later.
 Compatibility with previous versions of MineTest weren't tested, but still might work.
 
 Copyright (c) 2013, 4aiman Konsorumaniakku 4aiman@inbox.ru
@@ -27,22 +27,23 @@ local exceptions = {}
 local ex_pos = {}
 
 -- some messages:
--- level one
-function hinting_message(target)
-return "\nThe owner of this (or adjacent) area is " .. target .. ".\nAsk him/her for permission to change anyting here!"
+-- 1-3 is hint
+-- 4-6 is notion
+-- 7-9 is warning
+-- 10 = ban
+-- now even with fast tools any player should be able to notice messages...
+function hinting_message(target,count)
+  if count < 4 then	
+     return "\nThe owner of this (or adjacent) area is " .. target .. ".\nAsk him/her for permission to change anyting here!"
+  elseif (count > 3) and (count <7) then
+     return "\nYou should'n mess with other people's stuff.\nThis one (or adjacent) belongs to " .. target .. ".\nNote, that you may be punished for this attempt."	
+  elseif (count > 6) and (count <10) then
+     return "\nDo NOT mess up with what isn't yours.\nThis is " .. target .. "'s place.\nWarning! One more time and you'll be BANNED!"	
+  elseif count >=10 
+     return "\nYou were banned just now.\nIf the owner would forgive you, then you may return to this server."
+  end
 end
--- level two
-function warning_message(target)
-return "\nYou should'n mess with other people's stuff.\nThis one (or adjacent) belongs to " .. target .. ".\nNote, that you may be punished for this attempt."
-end
--- level three
-function lastone_message(target)
-return "\nDo NOT mess up with what isn't yours.\nThis is " .. target .. "'s place.\nWarning! One more time and you'll be BANNED!"
-end
--- -- level four: player would be banned after 5 seconds
-function banning_message(target)
-return "\nYou were banned just now.\nIf the owner would forgive you, then you may return to this server."
-end
+
 
 -- save this mod's tables
 function save_stuff()
@@ -263,7 +264,7 @@ function give_a_warning_or_ban(player,owner)
        found = true
     end
 
-if not found then
+    if not found then
        for key, value in ipairs(bans[player].data) do
            if value["own"] == owner then  
               value["cou"] = value["cou"] + 1
@@ -273,22 +274,23 @@ if not found then
               break
            end
        end       
-end
+   end
 
-if not found then
+   if not found then
        local d = {own = owner, cou = 0}  
        table.insert(bans[player].data, d)
        count = 0
 
-end
+   end
+   
+   local b = false
+   if count>=10 then
+      b = true
+   end
 
-         if count <= 0 then x = {message = hinting_message(owner), ban = false}
-    elseif count == 1 then x = {message = warning_message(owner), ban = false}
-    elseif count == 2 then x = {message = lastone_message(owner), ban = false}
-    elseif count  > 2 then x = {message = banning_message(owner), ban = true}
-    end
-    save_stuff()
-    return x 
+   x = {message = hinting_message(owner,count), ban = b}
+   save_stuff()
+   return x 
 end
 
 -- bans a player by the name "name" after 5 seconds 
