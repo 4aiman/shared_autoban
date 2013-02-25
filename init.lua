@@ -39,7 +39,7 @@ function hinting_message(target,count)
      return "\nYou should'n mess with other people's stuff.\nThis one (or adjacent) belongs to " .. target .. ".\nNote, that you may be punished for this attempt."	
   elseif (count > 6) and (count <10) then
      return "\nDo NOT mess up with what isn't yours.\nThis is " .. target .. "'s place.\nWarning! One more time and you'll be BANNED!"	
-  elseif count >=10 
+  elseif count >=10 then
      return "\nYou were banned just now.\nIf the owner would forgive you, then you may return to this server."
   end
 end
