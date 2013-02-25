@@ -1,3 +1,8 @@
-return {}
-return {}
-return {}
+local _={ }
+_[1]={ ["y"] = 3, ["x"] = 84, ["z"] = -47 }
+_[2]={ ["y"] = 2, ["x"] = 80, ["z"] = -42 }
+_[3]={ ["y"] = 2, ["x"] = 63, ["z"] = -59 }
+_[4]={ ["y"] = 2, ["x"] = 73, ["z"] = -50 }
+exceptions = minetest.deserialize('return { ["4"] = { ["data"] = { ["singleplayer"] = { { ["p2"] = _[1], ["p1"] = _[2] }, { ["p2"] = _[3], ["p1"] = _[4] } } } }, ["4aiman"] = { ["data"] = { ["singleplayer"] = { { ["p2"] = _[1], ["p1"] = _[2] }, { ["p2"] = _[3], ["p1"] = _[4] } } } }, ["singleplayer"] = { ["data"] = { ["singleplayer"] = { { ["p2"] = _[1], ["p1"] = _[2] }, { ["p2"] = _[3], ["p1"] = _[4] } } } } }')
+bans = minetest.deserialize('return {  }')
+ex_pos = minetest.deserialize('return { ["singleplayer"] = { ["first"] = true, ["pos1"] = { ["y"] = 2, ["x"] = 73, ["z"] = -50 }, ["pos2"] = { ["y"] = 2, ["x"] = 63, ["z"] = -59 } } }')

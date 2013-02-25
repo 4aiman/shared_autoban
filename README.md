@@ -65,7 +65,7 @@ A: First you must craft a "markup pencil". With that you can select areas: just 
    any block with that tool and you would set either the start or the end position. 
    Recipe for a pencil is as follows: 
    
-                {'',              'shared_autoban:coal_dust',   ''           }, 
+        {'',              'shared_autoban:coal_dust',   ''           }, 
     
 		{'default:stick', 'shared_autoban:coal_dust', 'default:stick'}, 
 		
@@ -73,7 +73,7 @@ A: First you must craft a "markup pencil". With that you can select areas: just 
 
    Shared_autoban:coal_dust can be crafted from a coal_lump like so: 
    
-                {'default:coal_lump'}
+        {'default:coal_lump'}
 
 Q: Why do I need that stupid pencil? Can't I live happily without it? 
 
@@ -85,7 +85,7 @@ Q: Okay, and just why do I need that PC of yours? Or it's optional too?
 A: "PC" isn't optional. PC is a node that allows you to grant or to revoke "interact" within defined positions. 
     Crafting recipe for a PC is as follows:
      
-  	{'default:cobble',  'default:cobble',               'default:cobble'}, 
+  	    {'default:cobble',  'default:cobble',               'default:cobble'}, 
   	
 		{'default:cobble',  'shared_autoban:markup_pencil', 'default:cobble'}, 
 		

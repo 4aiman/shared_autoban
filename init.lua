@@ -9,6 +9,7 @@ The author preserves the right to demand a fee and/or change this license as he 
 THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 Special thanks to all authors and modders of the "protector" mod.
+Also thanks to Rubenwardy from minetest.net, who made a function to check whether a player exist or not.
 ]]--
 
 -- some settings:
@@ -17,6 +18,15 @@ local show_messages = true
 -- defines whether infotext should be set on_after_place
 -- if true, then all blocks would have "Owner is USERNAME" tip. Handy, but annoying.
 local set_infotext = false
+-- if true, then player will be banned.
+-- otherwise server owner & trusted players will be notified
+local really_ban = true
+-- if true, then player will be unbanned immediately after last person forgives him
+-- otherwise server owner & trusted players will be notified
+local really_unban = true
+-- value in percent, which determine minimum percent of votes,
+-- needed by a player to use super pickaxes
+local min_trust_level = 80
 
 -- some lists:
 -- used for storing number of griefing attempt
@@ -25,6 +35,36 @@ local bans = {}
 local exceptions = {}
 -- used for storing pos1 & pos2 (those are used to make exceptions)
 local ex_pos = {}
+-- used for storing votes
+local trusted = {}
+
+-- Rubenwardy's function to check whether a player exist or not.
+-- Didn't want to depend on anything, but default, so just copied from his library
+function player_exists( name )
+	local privs = minetest.get_player_privs( name );
+	if( not( privs )) then
+		return false;
+	else
+		return true;
+	end
+end
+
+-- returna a table with registered users names
+function get_registred_players()     
+    local list = {}	
+    local input = io.open(minetest.get_worldpath().."/auth.txt", "r")
+    if input then	   	
+	   while true do
+          local r = input:read("*l")
+          if r == nil then break end
+          i = string.find(r, "::")
+          r = string.sub(r, 1, i-1)
+	      table.insert(list,r)     
+       end       
+       io.close(input)
+    end   
+	return list
+end
 
 -- some messages:
 -- 1-3 is hint
@@ -38,9 +78,13 @@ function hinting_message(target,count)
   elseif (count > 3) and (count <7) then
      return "\nYou should'n mess with other people's stuff.\nThis one (or adjacent) belongs to " .. target .. ".\nNote, that you may be punished for this attempt."	
   elseif (count > 6) and (count <10) then
-     return "\nDo NOT mess up with what isn't yours.\nThis is " .. target .. "'s place.\nWarning! One more time and you'll be BANNED!"	
-  elseif count >=10 
-     return "\nYou were banned just now.\nIf the owner would forgive you, then you may return to this server."
+     return "\nDo NOT mess up with what isn't yours.\nThis is " .. target .. "'s place.\nWarning! ".. tostring(10-count).." more times and you'll be BANNED!"	
+  elseif count >=10 then
+     if really_ban then 
+        return "\nYou were banned just now.\nIf the owner would forgive you, then you may return to this server."
+	 else
+	    return "\nYou won't be banned, however, those-who-should-be-notified will be notified." 
+	 end
   end
 end
 
@@ -49,9 +93,24 @@ end
 function save_stuff()
     local output = io.open(minetest.get_modpath('shared_autoban').."/stuff.txt", "w")
     if output then
-       output:write(minetest.serialize(exceptions).. "\n")			
-       output:write(minetest.serialize(bans)      .. "\n")			
-       output:write(minetest.serialize(ex_pos)           )			
+	   o  = minetest.serialize(exceptions);
+       i  = string.find(o, "return")
+       o1 = string.sub(o, 1, i-1)
+	   o2 = string.sub(o, i, -1)
+	   output:write(o1)	   
+       output:write("exceptions = minetest.deserialize('" .. o2 .. "')\n")			
+	   
+	   o  = minetest.serialize(bans);
+       i  = string.find(o, "return")
+       o1 = string.sub(o, 1, i-1)
+	   o2 = string.sub(o, i-1, -1)
+       output:write("bans = minetest.deserialize('" .. minetest.serialize(bans)            .. "')\n")			
+	   
+	   o  = minetest.serialize(ex_pos);
+       i  = string.find(o, "return")
+       o1 = string.sub(o, 1, i-1)
+	   o2 = string.sub(o, i-1, -1)
+       output:write("ex_pos = minetest.deserialize('" .. minetest.serialize(ex_pos)        .. "')"  )			
        io.close(output)
     end
 
@@ -59,7 +118,7 @@ end
 
 -- save this mod's tables
 function load_stuff()
-    local input = io.open(minetest.get_modpath('shared_autoban').."/stuff.txt", "r")
+    --[[local input = io.open(minetest.get_modpath('shared_autoban').."/stuff.txt", "r")
     if input then
        local r = input:read("*l")			                 
           exceptions = minetest.deserialize(r)       
@@ -69,7 +128,25 @@ function load_stuff()
        r = input:read("*l")						
            ex_pos = minetest.deserialize(r)       
        io.close(input)
-    end    
+    end  ]]--
+	dofile(minetest.get_modpath('shared_autoban').."/stuff.txt")
+end
+
+-- check whether super tool is in the player's hands...
+function check_for_super_tool(player)    
+	if (player:get_wielded_item():get_name()== "shared_autoban:admin_pick_wood")
+	or (player:get_wielded_item():get_name()== "shared_autoban:admin_pick_stone")
+	or (player:get_wielded_item():get_name()== "shared_autoban:admin_pick_steel")
+	or (player:get_wielded_item():get_name()== "shared_autoban:admin_pick_mese")
+	then 
+	    if (table.getn(get_registred_players())/100) >= min_trust_level then
+	      return true 
+		else
+	        	
+		end  
+	else
+	    return false
+	end
 end
 
 -- check for ownership at given pos only
@@ -80,6 +157,7 @@ function check_ownership_once(pos, pl)
    or meta:get_string("owner") == ""
    or minetest.env:get_node(pos).name == "air"
    or check_exception(meta:get_string("owner"), pl:get_player_name(), pos)
+   or check_for_super_tool(pl)
    then
       return true -- if it's not ours
    else
@@ -111,6 +189,11 @@ end
 -- allows owner to grant "interact" within his/her territory 
 -- (has nothing to do with "interact" priv)
 function create_exception(owner, player, pos1, pos2)
+    if not player_exists(player)
+	then	    
+	    return
+	end
+
     if exceptions == nil
 	then 
 	    exceptions = {}
@@ -140,6 +223,10 @@ end;
 -- return true if owner has granted player to build/break at pos
 -- otherwise returns false
 function check_exception(owner, player, pos)
+    if not player_exists(player)
+	then	    
+	    return
+	end
     if exceptions == nil
 	then 
 	     return false
@@ -186,11 +273,15 @@ end;
 -- deletes ANY exception rule for player within 
 -- min(pos1,pos2) to max(pos1,pos2)
 function remove_exception(owner, player, pos1, pos2)
-    if exceptions == nil then minetest.debug("exceptions is nil") return end   	
-	if owner == nil      then minetest.debug("owner is nil     ") return end	
-	if player == nil     then minetest.debug("playername is nil") return end	
-	if pos1 == nil       then minetest.debug("pos1 is nil      ") return end
-	if pos2 == nil       then minetest.debug("pos2 is nil      ") return end
+    if not player_exists(player)
+	then	    
+	    return
+	end
+    if exceptions == nil then return end   	
+	if owner == nil      then return end	
+	if player == nil     then return end	
+	if pos1 == nil       then return end
+	if pos2 == nil       then return end
 	for q,w in pairs (exceptions) do
         if q == owner then	      
            for i,v in pairs(w.data) do
@@ -253,7 +344,7 @@ function give_a_warning_or_ban(player,owner)
     then bans = {} 
     end
     if bans[player] == nil then
-       table.insert(bans, player)
+     --  table.insert(bans, player)
        bans[player] =  {}
     end
     if bans[player].data == nil then
@@ -293,11 +384,85 @@ function give_a_warning_or_ban(player,owner)
    return x 
 end
 
--- bans a player by the name "name" after 5 seconds 
-function ban_him_or_her(name)
-    minetest.after(5000, minetest.ban_player(name))    
+function notify_trusted(player)
+   -- notify_trusted(player)really_unban
 end
 
+-- bans a player by the name "name" after 5 seconds 
+function ban_him_or_her(name)
+    if really_ban then 
+       minetest.after(5000, minetest.ban_player(name))    
+	else
+	   notify_trusted(name)
+	end
+end
+
+-- set property violation level to 0
+-- player = violator, owner = rightful owner
+function forgive(owner,player)   
+   if not player_exists(player)
+   then	    
+	    return
+   end
+   if bans == nil 
+   then       
+       return false 
+   end
+   if bans[player] == nil 
+   then       
+	   return false 
+   end   
+   if bans[player].data == nil 
+   then       
+	   return false 
+   end
+   
+   for i,v in pairs (bans[player].data) do      
+	  if v.own == owner 
+	  then
+	      bans[player].data[i].cou = 0
+		  check_for_unban_possibility(player)
+		  save_stuff()
+	      return true
+	  end
+   end    
+end
+
+-- called on every /forgive command to unban a player
+-- if there's no more "grave" violations left
+function check_for_unban_possibility(player)
+   if bans == nil 
+   then 
+       minetest.unban_player_or_ip(player)   
+       return true
+   end
+   if bans[player] == nil 
+   then       
+       minetest.unban_player_or_ip(player)
+	   return true 
+   end   
+   if bans[player].data == nil 
+   then      
+       minetest.unban_player_or_ip(player)   
+	   return true
+   end
+   
+   for i,v in pairs (bans[player].data) do      
+	  if v.own == owner 
+	  then
+	      if bans[player].data[i].cou < 10
+		  then 
+		      if really_unban then 
+			    minetest.unban_player_or_ip(player)
+			  else
+			      notify_trusted(player)
+              end
+		  end		  
+	      return true
+	  end
+   end    
+   return false
+end
 
 -- remember good old minetest.item_place 
 old_place = minetest.item_place
@@ -403,7 +568,7 @@ minetest.register_node("shared_autoban:rule_em_all_node", {
     paramtype2 = "facedir",  
     walkable = true,
     inventory_image = "default_cobble.png",
-    groups = {dig_immediate=2, bouncy=100},
+    groups = {dig_immediate=2},
     description = "Permissions ruler!",
 		selection_box = {
 			type = "fixed",
@@ -492,11 +657,6 @@ minetest.register_item("shared_autoban:markup_pencil", {
 		pos = pointed_thing.under
         if pos == nil then return end  
         
-        if user.first 
-        then user:set_properties{pos1 = n,}
-        else user:set_properties{pos2 = n,}
-        end
-        
         local name = user:get_player_name()
         if name ~= "" then
            if ex_pos[name] == nil then
@@ -551,5 +711,219 @@ minetest.register_craftitem("shared_autoban:coal_dust", {
 	description = "Coal Dust",
 	inventory_image = "coal_dust.png",
 })
+
+-- super picks craft definition
+-- can dig any protected block
+
+-- wooden:
+minetest.register_craft({
+	output = 'shared_autoban:admin_pick_wood',
+	recipe = {
+		{'default:pick_wood'},
+		{'shared_autoban:markup_pencil'},		
+	}
+})
+
+-- stone:
+minetest.register_craft({
+	output = 'shared_autoban:admin_pick_stone',
+	recipe = {
+		{'default:pick_stone'},
+		{'shared_autoban:markup_pencil'},		
+	}
+})
+
+-- steel:
+minetest.register_craft({
+	output = 'shared_autoban:admin_pick_steel',
+	recipe = {
+		{'default:pick_steel'},
+		{'shared_autoban:markup_pencil'},		
+	}
+})
+
+-- mese:
+minetest.register_craft({
+	output = 'shared_autoban:admin_pick_mese',
+	recipe = {
+		{'default:pick_mese'},
+		{'shared_autoban:markup_pencil'},		
+	}
+})
+
+
+-- super picks tool definition
+-- can dig any protected block
+
+-- wooden:
+minetest.register_tool("shared_autoban:admin_pick_wood", {
+	description = "Super Wooden Pickaxe",
+	inventory_image = "default_tool_woodpick.png",
+	tool_capabilities = {
+		max_drop_level=0,
+		groupcaps={
+			cracky={times={[2]=2.00, [3]=1.20}, uses=10, maxlevel=1}
+		}
+	},
+})
+
+--stone
+minetest.register_tool("shared_autoban:admin_pick_stone", {
+	description = "Super Stone Pickaxe",
+	inventory_image = "default_tool_stonepick.png",
+	tool_capabilities = {
+		max_drop_level=0,
+		groupcaps={
+			cracky={times={[1]=2.00, [2]=1.20, [3]=0.80}, uses=20, maxlevel=1}
+		}
+	},
+})
+
+-- steel
+minetest.register_tool("shared_autoban:admin_pick_steel", {
+	description = "Super Steel Pickaxe",
+	inventory_image = "default_tool_steelpick.png",
+	tool_capabilities = {
+		max_drop_level=1,
+		groupcaps={
+			cracky={times={[1]=4.00, [2]=1.60, [3]=1.00}, uses=10, maxlevel=2}
+		}
+	},
+})
+
+--mese
+minetest.register_tool("shared_autoban:admin_pick_mese", {
+	description = "Super Mese Pickaxe",
+	inventory_image = "default_tool_mesepick.png",
+	tool_capabilities = {
+		full_punch_interval = 1.0,
+		max_drop_level=3,
+		groupcaps={
+			cracky={times={[1]=2.0, [2]=1.0, [3]=0.5}, uses=20, maxlevel=3},
+			crumbly={times={[1]=2.0, [2]=1.0, [3]=0.5}, uses=20, maxlevel=3},
+			snappy={times={[1]=2.0, [2]=1.0, [3]=0.5}, uses=20, maxlevel=3}
+		}
+	},
+})
+
+-- chat command to "forgive" a player
+-- drops count of violations to 0
+minetest.register_chatcommand("forgive", {
+    params = "<playername> | leave playername empty to see help message",
+    description = "Drops the property violation counter",
+    privs = {},
+    func = function(name, param)
+        if param == "" then
+            minetest.chat_send_player(name, "Usage: /forgive <playername>")
+            return        
+        else
+            forgive(name,param)
+            minetest.chat_send_all(name .. " forgave " ..  param .. ".")
+            minetest.log("action", name .. " forgave " ..  param .. ".")
+            return        
+		end
+    end
+})
+
+-- chat command to grant area interact to a player
+-- does the same thing as the button "Grant" in the PC's formspec
+minetest.register_chatcommand("area_grant", {
+    params = "<playername> | leave playername empty to see help message",
+    description = "Grant 'interact' to playername (only with blocks you own)",
+    privs = {},
+    func = function(name, param)	
+        if param == "" then
+            minetest.chat_send_player(name, "Usage: /area_grant <playername>")
+            return        
+        else
+		    if not player_exists(param) then return end            
+			local m = name .. " granted area interact to " ..  param .. " "..
+			"(".. minetest.pos_to_string(ex_pos[param].pos1) .. " " .. minetest.pos_to_string(ex_pos[param].pos2) .. ")."
+            minetest.chat_send_all(m)
+            minetest.log("action", m)
+            return        
+		end
+    end
+})
+
+-- chat command to revoke area interact from a player
+-- does the same thing as the button "Revoke" in the PC's formspec
+minetest.register_chatcommand("area_revoke", {
+    params = "<playername> | leave playername empty to see help message",
+    description = "Revoke playername's 'interact' granted by /grantarea",
+    privs = {},
+    func = function(name, param)
+        if param == "" then
+            minetest.chat_send_player(name, "Usage: /area_revoke <playername>")
+            return        
+        else
+            if not player_exists(player) then return end
+			local m = name .. " revoked area interact from " ..  param .. " "..
+			"(".. minetest.pos_to_string(ex_pos[param].pos1) .. " " .. minetest.pos_to_string(ex_pos[param].pos2) .. ")."
+            minetest.chat_send_all(m)
+            minetest.log("action", m)
+            return        
+		end
+    end
+})
+
+-- chat command to grant area interact to all players
+minetest.register_chatcommand("area_grant_all", {
+    params = "<playername> | Use --help switch see help message",
+    description = "Grant 'interact' to all players (only with blocks you own)",
+    privs = {},
+    func = function(name, param)	
+        if param == "--help" then
+            minetest.chat_send_player(name, "Usage: /area_grant_all")
+            return        
+        else
+		    if not player_exists(param) then return end            
+			if ex_pos[name].pos1==nil or ex_pos[name].pos1==nil 
+			then
+			    minetest.chat_send_player(name, "To use this chat command you must set Start/End positions with markup pencil.")   
+                return			
+			end
+            local list=get_registred_players()
+			for i,v in ipairs(list) do
+               create_exception(name, v, ex_pos[name].pos1, ex_pos[name].pos2)     			
+			end
+			local m = name .. " granted area interact to everyone "..
+			"(".. minetest.pos_to_string(ex_pos[name].pos1) .. " " .. minetest.pos_to_string(ex_pos[name].pos2) .. ")."
+            minetest.chat_send_all(m)
+            minetest.log("action", m)
+            return        
+		end
+    end
+})
+
+-- chat command to rovoke area interact from all players
+minetest.register_chatcommand("area_revoke_all", {
+    params = "<playername> | Use --help switch see help message",
+    description = "Revoke 'interact' to all players (only with blocks you own)",
+    privs = {},
+    func = function(name, param)	
+        if param == "--help" then
+            minetest.chat_send_player(name, "Usage: /area_revoke_all")
+            return        
+        else
+		    if not player_exists(param) then return end            
+			if ex_pos[name].pos1==nil or ex_pos[name].pos1==nil 
+			then
+			    minetest.chat_send_player(name, "To use this chat command you must set Start/End positions with markup pencil.")   
+                return			
+			end
+            local list=get_registred_players()
+			for i,v in ipairs(list) do               
+			   remove_exception(name, v, ex_pos[name].pos1, ex_pos[name].pos2)
+			end
+			local m = name .. " revoked area interact to everyone "..
+			"(".. minetest.pos_to_string(ex_pos[name].pos1) .. " " .. minetest.pos_to_string(ex_pos[name].pos2) .. ")."
+            minetest.chat_send_all(m)
+            minetest.log("action", m)
+            return        
+		end
+    end
+})
+
 
 load_stuff()
