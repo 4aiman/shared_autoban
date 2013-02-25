@@ -33,16 +33,11 @@ Q: If I can't place a block directly next to someone else's block, then where I 
 A: You can't place blocks only at adjacent positions. Say, someone's block is placed at some "position".
    Then you can't place blocks only at the following positions: 
    
-        - position = {position.x-1, position.y,   position.z  }; 
-        
-        - position = {position.x+1, position.y,   position.z  }; 
-        
-        - position = {position.x,   position.y-1, position.z  }; 
-        
-        - position = {position.x,   position.y+1, position.z  }; 
-        
-        - position = {position.x,   position.y,   position.z-1}; 
-        
+        - position = {position.x-1, position.y,   position.z  };         
+        - position = {position.x+1, position.y,   position.z  };         
+        - position = {position.x,   position.y-1, position.z  };         
+        - position = {position.x,   position.y+1, position.z  };         
+        - position = {position.x,   position.y,   position.z-1};         
         - position = {position.z,   position.y,   position.z+1}. 
         
    That means you can place block diagonally at position like {position.x-1, position.y-1, position.z}.
@@ -65,11 +60,9 @@ A: First you must craft a "markup pencil". With that you can select areas: just 
    any block with that tool and you would set either the start or the end position. 
    Recipe for a pencil is as follows: 
    
-        {'',              'shared_autoban:coal_dust',   ''           }, 
-    
-		{'default:stick', 'shared_autoban:coal_dust', 'default:stick'}, 
-		
-		{'default:stick', 'shared_autoban:coal_dust', 'default:stick'}. 
+        {'',              'shared_autoban:coal_dust',   ''           },     
+        {'default:stick', 'shared_autoban:coal_dust', 'default:stick'}, 		
+        {'default:stick', 'shared_autoban:coal_dust', 'default:stick'}. 
 
    Shared_autoban:coal_dust can be crafted from a coal_lump like so: 
    
@@ -85,11 +78,9 @@ Q: Okay, and just why do I need that PC of yours? Or it's optional too?
 A: "PC" isn't optional. PC is a node that allows you to grant or to revoke "interact" within defined positions. 
     Crafting recipe for a PC is as follows:
      
-  	    {'default:cobble',  'default:cobble',               'default:cobble'}, 
-  	
-		{'default:cobble',  'shared_autoban:markup_pencil', 'default:cobble'}, 
-		
-		{'default:cobble',  'default:cobble',               'default:cobble'}.
+        {'default:cobble',  'default:cobble',               'default:cobble'}, 
+        {'default:cobble',  'shared_autoban:markup_pencil', 'default:cobble'}, 
+        {'default:cobble',  'default:cobble',               'default:cobble'}.
 
 Q: I've made a PC , then what? 
 
@@ -122,18 +113,12 @@ A: Just select pos1 and pos2 so that one of them would be smaller or equal to th
    the second one would be bigger or equal to the pos2 of the granted area.
    To make it simplier to understand, let's say you have granted to 4aiman (yep, that's me) "interact" 
    from {0,0,0} to {10,10,10}.
-   To revoke "interact" you should set pos1 and pos2 as follows: 
-    
-      pos1 = {0,0,0} pos = {10,10,10}  
-      
-   or 
-    
-      pos1 = {0-whatever,0-whatever,0-whatever} pos = {10+whatever,10+whatever,10+whatever}  
-      
-   or  
-   
-      pos1 = {0-whatever,10+whatever,0-whatever} pos = {10+whatever,0-whatever,10+whatever}  
-      
+   To revoke "interact" you should set pos1 and pos2 as follows:     
+      pos1 = {0,0,0} pos = {10,10,10}        
+   or     
+      pos1 = {0-whatever,0-whatever,0-whatever} pos = {10+whatever,10+whatever,10+whatever}        
+   or     
+      pos1 = {0-whatever,10+whatever,0-whatever} pos = {10+whatever,0-whatever,10+whatever}        
    etc... 
    
    As you can see above, all you really need is to select an area without paying any special attention 
@@ -186,20 +171,27 @@ Q: What are you talking about? There're chatcommands available, aren't they?
 
 A: Yes, there are. One can use this commands: 
 
-   /area_grant <playername>            - grants interact to <playername> in the selected area (use pencil)
-   /area_revoke <playername>           - revokes interact from <playername> in the selected area (use pencil)
-   /area_grant_all <playername>        - grants interact to all in the selected area (use pencil)
-   /area_revoke_all <playername>       - revokes interact from all in the selected area (use pencil)
-   /forgive <playername>               - drops violaton counter of <playername> to 0
-   /vote <playername>                  - +1 to reputation of <playername>
-   /devote <playername>                - -1 to reputation of <playername>
+   /area_grant <playername>            - grants interact to <playername> in the selected area (use pencil) 
+   
+   /area_revoke <playername>           - revokes interact from <playername> in the selected area (use pencil) 
+   
+   /area_grant_all <playername>        - grants interact to all in the selected area (use pencil) 
+   
+   /area_revoke_all <playername>       - revokes interact from all in the selected area (use pencil) 
+   
+   /forgive <playername>               - drops violaton counter of <playername> to 0 
+   
+   /vote <playername>                  - +1 to reputation of <playername> 
+   
+   /devote <playername>                - -1 to reputation of <playername> 
    
    /forgive will check whether there are someone else who is griefed/annoyed by <playername>. If there's no such 
-            person, then <playername> have good chances to be unbanned*.
+            person, then <playername> have good chances to be unbanned*. 
 
    /vote is possible only 1 time for each EXISTING <playername>. 
-         So: - No, you can't "create" trusted player by yourself.
-             - Yes, even if you cooperate with someone, you can't give your votes for some inexistent person.
+   
+         So: - No, you can't "create" trusted player by yourself. 
+             - Yes, even if you cooperate with someone, you can't give your votes for some inexistent person. 
 
    /devote is also possible only 1 time for each EXISTING <playername> and only if you've voted for that person.
    
@@ -214,8 +206,8 @@ Q: Wow! Supertool! What's that?
 
 A: That's a pickaxe, crafted like this:
   
-      {'default:pick_*material*'}
-      {'shared_autoban:markup_pencil'}   
+        {'default:pick_*material*'}
+        {'shared_autoban:markup_pencil'}   
    
    There are wooden, stone, steel and mese pickaxes. They are equal to their prototypes in all terms, but can break
    owned by a third person blocks. (Only if it's wielder is trusted amongst server population).
