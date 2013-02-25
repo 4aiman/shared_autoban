@@ -78,6 +78,7 @@ function hinting_message(target,count)
   elseif (count > 3) and (count <7) then
      return "\nYou should'n mess with other people's stuff.\nThis one (or adjacent) belongs to " .. target .. ".\nNote, that you may be punished for this attempt."	
   elseif (count > 6) and (count <10) then
+<<<<<<< HEAD
      return "\nDo NOT mess up with what isn't yours.\nThis is " .. target .. "'s place.\nWarning! ".. tostring(10-count).." more times and you'll be BANNED!"	
   elseif count >=10 then
      if really_ban then 
@@ -85,6 +86,11 @@ function hinting_message(target,count)
 	 else
 	    return "\nYou won't be banned, however, those-who-should-be-notified will be notified." 
 	 end
+=======
+     return "\nDo NOT mess up with what isn't yours.\nThis is " .. target .. "'s place.\nWarning! One more time and you'll be BANNED!"	
+  elseif count >=10 then
+     return "\nYou were banned just now.\nIf the owner would forgive you, then you may return to this server."
+>>>>>>> bbc13f267cb272198c9c4a62c76f0a7e3bba59ed
   end
 end
 
