@@ -184,7 +184,8 @@ A: It's a bug. I'll fix that anytime soon. If that happens, then there is a bloc
    
 Q: What are you talking about? There're chatcommands available, aren't they?
 
-A: Yes, there are. One can use this commands:
+A: Yes, there are. One can use this commands: 
+
    /area_grant <playername>            - grants interact to <playername> in the selected area (use pencil)
    /area_revoke <playername>           - revokes interact from <playername> in the selected area (use pencil)
    /area_grant_all <playername>        - grants interact to all in the selected area (use pencil)
@@ -193,7 +194,7 @@ A: Yes, there are. One can use this commands:
    /vote <playername>                  - +1 to reputation of <playername>
    /devote <playername>                - -1 to reputation of <playername>
    
-   /forgive will check whether there are someone else who is griefed/annoyed by <playername>. If there's no such
+   /forgive will check whether there are someone else who is griefed/annoyed by <playername>. If there's no such 
             person, then <playername> have good chances to be unbanned*.
 
    /vote is possible only 1 time for each EXISTING <playername>. 
