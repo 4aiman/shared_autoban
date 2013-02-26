@@ -418,19 +418,14 @@ function get_violations_count(player)
 end
 
 -- notify trusted about player being nasty...
-function notify_trusted(player, unban)
+function notify_trusted(message)
    local l = minetest.get_connected_players()
    local pl_num = table.getn(get_registred_players())
-   local times = get_violations_count(player)
-   
    for i,x in pairs(l) do
        local name = x:get_player_name()
        if trusted[name] ~= nil 
-       and (trusted[name]) >= pl_num*min_trust_level/100 then
-           if not unban 
-           then minetest.chat_send_player(name,player .. " annoys others..." .. times .. " times total.") 
-           else minetest.chat_send_player(name,"No one seem to be annoyed by " .. player .. " anymore.") 
-           end
+       and (trusted[name]) >= pl_num*min_trust_level/100 then	       
+           minetest.chat_send_player(name, message)            
        end
    end
 end
@@ -440,7 +435,9 @@ function ban_him_or_her(name)
     if really_ban then 
        minetest.after(5000, minetest.ban_player(name))    
 	else
-	   notify_trusted(name)
+	   local times = get_violations_count(name)
+	   local message = name .. " annoys other players. Total: " .. times .. " time(s)."
+	   notify_trusted(message)
 	end
 end
 
@@ -478,35 +475,38 @@ end
 -- called on every /forgive command to unban a player
 -- if there's no more "grave" violations left
 function check_for_unban_possibility(player)
+   local result = false
    if bans == nil 
    then 
-       return true
+       result = true
    end
    if bans[player] == nil 
    then       
-	   return true 
+	   result = true
    end   
    if bans[player].data == nil 
    then      
-	   return true
+	   result = true
+   end
+
+   local count = 0  
+   for i,v in pairs (bans[player].data) do      
+       if bans[player].data[i].cou < warnings_before_ban
+		  then 
+              count = count+1
+		  end		  	      	  
    end
    
-   for i,v in pairs (bans[player].data) do      
-	  if v.own == owner 
-	  then
-	      if bans[player].data[i].cou < 10
-		  then 
-		      if really_unban then 
-			    minetest.unban_player_or_ip(player)
-			  else
-			      local unban = true
-			      notify_trusted(player, unban)
-              end
-		  end		  
-	      return true
-	  end
-   end    
-   return false
+   if #bans[player].data == count then
+      result = true
+   	  if really_unban then 
+	     minetest.unban_player_or_ip(player)
+	  else
+		  local message = "No one seems to be against " .. player .. " anymore."
+		  notify_trusted(message)
+      end
+   end
+   return result
 end
 
 -- remember good old minetest.item_place 
@@ -870,7 +870,7 @@ minetest.register_chatcommand("forgive", {
             end                    
             forgive(name,param)
             minetest.chat_send_all(name .. " forgave " ..  param .. ".")
-            minetest.log("action", name .. " forgave " ..  param .. ".")
+--            minetest.log("action", name .. " forgave " ..  param .. ".")
             return        
 		end
     end
@@ -896,7 +896,7 @@ minetest.register_chatcommand("area_grant", {
 			"(".. minetest.pos_to_string(ex_pos[name].pos1) .. " " .. minetest.pos_to_string(ex_pos[name].pos2) .. ")."
 			create_exception(name, param, ex_pos[name].pos1, ex_pos[name].pos2)
             minetest.chat_send_all(m)
-            minetest.log("action", m)
+--            minetest.log("action", m)
             return        
 		end
     end
@@ -922,7 +922,7 @@ minetest.register_chatcommand("area_revoke", {
 			"(".. minetest.pos_to_string(ex_pos[name].pos1) .. " " .. minetest.pos_to_string(ex_pos[name].pos2) .. ")."
             remove_exception(name, param, ex_pos[name].pos1, ex_pos[name].pos2)			
             minetest.chat_send_all(m)
-            minetest.log("action", m)
+--            minetest.log("action", m)
             return        
 		end
     end
@@ -951,7 +951,7 @@ minetest.register_chatcommand("area_grant_all", {
 			local m = name .. " granted area interact to everyone "..
 			"(".. minetest.pos_to_string(ex_pos[name].pos1) .. " " .. minetest.pos_to_string(ex_pos[name].pos2) .. ")."
             minetest.chat_send_all(m)
-            minetest.log("action", m)
+--            minetest.log("action", m)
             return        
 		end
     end
@@ -980,7 +980,7 @@ minetest.register_chatcommand("area_revoke_all", {
 			local m = name .. " revoked area interact to everyone "..
 			"(".. minetest.pos_to_string(ex_pos[name].pos1) .. " " .. minetest.pos_to_string(ex_pos[name].pos2) .. ")."
             minetest.chat_send_all(m)
-            minetest.log("action", m)
+--            minetest.log("action", m)
             return        
 		end
     end
@@ -1020,7 +1020,7 @@ minetest.register_chatcommand("vote", {
             end            
             save_stuff()
             minetest.chat_send_all(name .. " voted for " ..  param .. ".")
-            minetest.log("action", name .. " voted for " ..  param .. ".")
+--            minetest.log("action", name .. " voted for " ..  param .. ".")
             return        
 		end
     end
@@ -1057,7 +1057,7 @@ minetest.register_chatcommand("devote", {
             end
             save_stuff()
             minetest.chat_send_all(name .. " don't trust " ..  param .. " anymore.")
-            minetest.log("action", name .. " don't trust " ..  param .. " anymore.")
+--            minetest.log("action", name .. " don't trust " ..  param .. " anymore.")
             return        
 		end
     end
