@@ -14,7 +14,7 @@ Also thanks to Rubenwardy from minetest.net, who made a function to check whethe
 
 -- some settings:
 -- one can disable some messages by setting this to false
-local show_messages = true
+local show_messages = false
 -- defines whether infotext should be set on_after_place
 -- if true, then all blocks would have "Owner is USERNAME" tip. Handy, but annoying.
 local set_infotext = false
@@ -185,7 +185,7 @@ function check_ownership_once(pos, pl)
    then
       return true -- if it's not ours
    else
-      return false  -- if it IS ours
+      return false,meta:get_string("owner")  -- if it IS ours
    end 
 end
 
@@ -199,14 +199,29 @@ function check_ownership(pos, placer)
     local phoney_pos_bott = {x = pos.x, y = pos.y, z = pos.z-1}
 	local phoney_pos_uppe = {x = pos.x, y = pos.y, z = pos.z+1}
 
-    if  check_ownership_once(phoney_pos_left, placer)
-	and check_ownership_once(phoney_pos_righ, placer)
-    and check_ownership_once(phoney_pos_back, placer)
-    and check_ownership_once(phoney_pos_forv, placer)
-    and check_ownership_once(phoney_pos_uppe, placer)
-    and check_ownership_once(phoney_pos_bott, placer)
-	then return true
-	else return false
+    local list = {}
+    phoney_pos_left,_1 = check_ownership_once(phoney_pos_left, placer)
+	phoney_pos_righ,_2 = check_ownership_once(phoney_pos_righ, placer)
+    phoney_pos_back,_3 = check_ownership_once(phoney_pos_back, placer)
+    phoney_pos_forv,_4 = check_ownership_once(phoney_pos_forv, placer)
+    phoney_pos_uppe,_5 = check_ownership_once(phoney_pos_uppe, placer)
+    phoney_pos_bott,_6 = check_ownership_once(phoney_pos_bott, placer)
+	
+	list[1] = _1
+	list[2] = _2
+	list[3] = _3
+	list[4] = _4
+	list[5] = _5
+	list[6] = _6
+	
+    if  phoney_pos_left
+	and phoney_pos_righ
+    and phoney_pos_back
+    and phoney_pos_forv
+    and phoney_pos_uppe
+    and phoney_pos_bott
+	then return true, list
+	else return false,list
 	end
 end
 
@@ -516,7 +531,8 @@ old_place = minetest.item_place
 function minetest.item_place(itemstack, placer, pointed_thing)    
 	if placer:get_wielded_item():is_empty() then return end				
     local pos = pointed_thing.above
-    if check_ownership(pos, placer)
+	local can,adj = check_ownership(pos, placer)
+    if can 
 	then	    
 		local count = itemstack:get_count()
 	 	local name = itemstack:get_name()
@@ -527,18 +543,17 @@ function minetest.item_place(itemstack, placer, pointed_thing)
         if set_infotext then meta:set_string("infotext","Owned by " .. placer:get_player_name()) end
 		return itemstack
 	else
-           local pos = pointed_thing.under
-           local meta = minetest.env:get_meta(pos)
-           local owner = meta:get_string("owner") or "someone"     
+		for i,v in ipairs(adj)  do		
+	       minetest.chat_send_all(v)
            local name = placer:get_player_name()
-           local x = give_a_warning_or_ban(name,owner)
+           local x = give_a_warning_or_ban(name,v)
            if show_messages then
                minetest.chat_send_player(name,x.message)
            end 
            if x.ban then
               ban_him_or_her(name)                        
            end
-           
+        end   
 		return 
     end			
 end
