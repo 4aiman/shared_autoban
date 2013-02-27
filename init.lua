@@ -17,7 +17,7 @@ Also thanks to Rubenwardy from minetest.net, who made a function to check whethe
 local show_messages = true
 -- defines whether infotext should be set on_after_place
 -- if true, then all blocks would have "Owner is USERNAME" tip. Handy, but annoying.
-local set_infotext = false
+local set_infotext = true
 -- if true, then player will be banned.
 -- otherwise server owner & trusted players will be notified
 local really_ban = false
@@ -28,7 +28,7 @@ local really_unban = false
 -- needed by a player to use super pickaxes
 local min_trust_level = 80
 -- this value shows how many times one will be warned before banned 
-local warnings_before_ban = 10
+local warnings_before_ban = 100000
 
 -- some lists:
 -- used for storing number of griefing attempt
@@ -175,38 +175,123 @@ end
 
 -- check for ownership at given pos only
 function check_ownership_once(pos, pl)   
-   local meta = minetest.env:get_meta(pos)
+   local pos1 = pos
+   if pos1 == nil then minetest.chat_send_all("check_ownership_once pos is nil??!") return end
+   local meta = minetest.env:get_meta(pos1)
+   if meta == nil then return true end
    if meta:get_string("owner") == pl:get_player_name()
    or meta:get_string("owner") == nil
    or meta:get_string("owner") == ""
-   or minetest.env:get_node(pos).name == "air"
+   or minetest.env:get_node(pos1).name == "air"
    or check_exception(meta:get_string("owner"), pl:get_player_name(), pos)
    or check_for_super_tool(pl)
    then
       return true -- if it's not ours
    else
-      return false  -- if it IS ours
+      return false,meta:get_string("owner")  -- if it IS ours
    end 
 end
 
 -- check for ownership at positions adjacent to pos
 -- no diagonal, though - it would be unjust to claim those too
 function check_ownership(pos, placer)
-    local phoney_pos_left = {x = pos.x-1, y = pos.y, z = pos.z}
-    local phoney_pos_righ = {x = pos.x+1, y = pos.y, z = pos.z}
-    local phoney_pos_back = {x = pos.x, y = pos.y-1, z = pos.z}
-    local phoney_pos_forv = {x = pos.x, y = pos.y+1, z = pos.z}
-    local phoney_pos_bott = {x = pos.x, y = pos.y, z = pos.z-1}
-	local phoney_pos_uppe = {x = pos.x, y = pos.y, z = pos.z+1}
+    local phoney_pos_01 = {x = pos.x-1, y = pos.y-1, z = pos.z-1}
+    local phoney_pos_02 = {x = pos.x  , y = pos.y-1, z = pos.z-1}
+    local phoney_pos_03 = {x = pos.x+1, y = pos.y-1, z = pos.z-1}
+    local phoney_pos_04 = {x = pos.x-1, y = pos.y-1, z = pos.z  }
+    local phoney_pos_05 = {x = pos.x  , y = pos.y-1, z = pos.z  }
+    local phoney_pos_06 = {x = pos.x+1, y = pos.y-1, z = pos.z  }
+    local phoney_pos_07 = {x = pos.x-1, y = pos.y-1, z = pos.z+1}
+    local phoney_pos_08 = {x = pos.x  , y = pos.y-1, z = pos.z+1}
+    local phoney_pos_09 = {x = pos.x+1, y = pos.y-1, z = pos.z+1}
+	
+    local phoney_pos_10 = {x = pos.x-1, y = pos.y  , z = pos.z-1}
+    local phoney_pos_11 = {x = pos.x  , y = pos.y  , z = pos.z-1}
+    local phoney_pos_12 = {x = pos.x+1, y = pos.y  , z = pos.z-1}
+    local phoney_pos_13 = {x = pos.x-1, y = pos.y  , z = pos.z  }
+    -- local phoney_pos_14 = {x = pos.x  , y = pos.y  , z = pos.z  } - no need
+    local phoney_pos_15 = {x = pos.x+1, y = pos.y  , z = pos.z  }
+    local phoney_pos_16 = {x = pos.x-1, y = pos.y  , z = pos.z+1}
+    local phoney_pos_17 = {x = pos.x  , y = pos.y  , z = pos.z+1}
+    local phoney_pos_18 = {x = pos.x+1, y = pos.y  , z = pos.z+1}
+	
+    local phoney_pos_19 = {x = pos.x-1, y = pos.y+1, z = pos.z-1}
+    local phoney_pos_20 = {x = pos.x  , y = pos.y+1, z = pos.z-1}
+    local phoney_pos_21 = {x = pos.x+1, y = pos.y+1, z = pos.z-1}
+    local phoney_pos_22 = {x = pos.x-1, y = pos.y+1, z = pos.z  }
+    local phoney_pos_23 = {x = pos.x  , y = pos.y+1, z = pos.z  }
+    local phoney_pos_24 = {x = pos.x+1, y = pos.y+1, z = pos.z  }
+    local phoney_pos_25 = {x = pos.x-1, y = pos.y+1, z = pos.z+1}
+    local phoney_pos_26 = {x = pos.x  , y = pos.y+1, z = pos.z+1}
+    local phoney_pos_27 = {x = pos.x+1, y = pos.y+1, z = pos.z+1}
+	
 
-    if  check_ownership_once(phoney_pos_left, placer)
-	and check_ownership_once(phoney_pos_righ, placer)
-    and check_ownership_once(phoney_pos_back, placer)
-    and check_ownership_once(phoney_pos_forv, placer)
-    and check_ownership_once(phoney_pos_uppe, placer)
-    and check_ownership_once(phoney_pos_bott, placer)
-	then return true
-	else return false
+    local list = {}    	
+    phoney_pos_01,_01 = check_ownership_once(phoney_pos_01, placer)
+	if phoney_pos_01 == nil then minetest.debug("check_ownership pos is nil??!") return end		    
+	phoney_pos_02,_02 = check_ownership_once(phoney_pos_02, placer)
+    phoney_pos_03,_03 = check_ownership_once(phoney_pos_03, placer)
+    phoney_pos_04,_04 = check_ownership_once(phoney_pos_04, placer)
+    phoney_pos_05,_05 = check_ownership_once(phoney_pos_05, placer)
+    phoney_pos_06,_06 = check_ownership_once(phoney_pos_06, placer)
+    phoney_pos_07,_07 = check_ownership_once(phoney_pos_07, placer)
+    phoney_pos_08,_08 = check_ownership_once(phoney_pos_08, placer)
+    phoney_pos_09,_09 = check_ownership_once(phoney_pos_09, placer)
+    phoney_pos_10,_10 = check_ownership_once(phoney_pos_10, placer)
+    phoney_pos_11,_11 = check_ownership_once(phoney_pos_11, placer)
+    phoney_pos_12,_12 = check_ownership_once(phoney_pos_12, placer)
+    phoney_pos_13,_13 = check_ownership_once(phoney_pos_13, placer)
+--
+    phoney_pos_15,_15 = check_ownership_once(phoney_pos_14, placer)
+    phoney_pos_16,_16 = check_ownership_once(phoney_pos_16, placer)
+    phoney_pos_17,_17 = check_ownership_once(phoney_pos_17, placer)
+    phoney_pos_18,_18 = check_ownership_once(phoney_pos_18, placer)
+    phoney_pos_19,_19 = check_ownership_once(phoney_pos_19, placer)
+    phoney_pos_20,_20 = check_ownership_once(phoney_pos_20, placer)
+    phoney_pos_21,_21 = check_ownership_once(phoney_pos_21, placer)
+    phoney_pos_22,_22 = check_ownership_once(phoney_pos_22, placer)
+    phoney_pos_23,_23 = check_ownership_once(phoney_pos_23, placer)
+    phoney_pos_24,_24 = check_ownership_once(phoney_pos_24, placer)
+    phoney_pos_25,_25 = check_ownership_once(phoney_pos_25, placer)
+    phoney_pos_26,_26 = check_ownership_once(phoney_pos_26, placer)
+    phoney_pos_27,_27 = check_ownership_once(phoney_pos_27, placer)
+	
+	list[01] = _01
+	list[02] = _02
+	list[03] = _03
+	list[04] = _04
+	list[05] = _05
+	list[06] = _06
+	list[07] = _07
+	list[08] = _08
+	list[09] = _09
+	list[10] = _10
+	list[11] = _11
+	list[12] = _12
+	list[13] = _13
+--	
+	list[15] = _15
+	list[16] = _16
+	list[17] = _17
+	list[18] = _18
+	list[19] = _19
+	list[20] = _20
+	list[21] = _21
+	list[22] = _22
+	list[23] = _23
+	list[24] = _24
+	list[25] = _25
+	list[26] = _26
+    list[27] = _27
+	
+    if  phoney_pos_left
+	and phoney_pos_righ
+    and phoney_pos_back
+    and phoney_pos_forv
+    and phoney_pos_uppe
+    and phoney_pos_bott
+	then return true, list
+	else return false,list
 	end
 end
 
@@ -418,19 +503,14 @@ function get_violations_count(player)
 end
 
 -- notify trusted about player being nasty...
-function notify_trusted(player, unban)
+function notify_trusted(message)
    local l = minetest.get_connected_players()
    local pl_num = table.getn(get_registred_players())
-   local times = get_violations_count(player)
-   
    for i,x in pairs(l) do
        local name = x:get_player_name()
        if trusted[name] ~= nil 
-       and (trusted[name]) >= pl_num*min_trust_level/100 then
-           if not unban 
-           then minetest.chat_send_player(name,player .. " annoys others..." .. times .. " times total.") 
-           else minetest.chat_send_player(name,"No one seem to be annoyed by " .. player .. " anymore.") 
-           end
+       and (trusted[name]) >= pl_num*min_trust_level/100 then	       
+           minetest.chat_send_player(name, message)            
        end
    end
 end
@@ -440,7 +520,9 @@ function ban_him_or_her(name)
     if really_ban then 
        minetest.after(5000, minetest.ban_player(name))    
 	else
-	   notify_trusted(name)
+	   local times = get_violations_count(name)
+	   local message = name .. " annoys other players. Total: " .. times .. " time(s)."
+	   notify_trusted(message)
 	end
 end
 
@@ -478,45 +560,55 @@ end
 -- called on every /forgive command to unban a player
 -- if there's no more "grave" violations left
 function check_for_unban_possibility(player)
+   local result = false
    if bans == nil 
    then 
-       return true
+       result = true
    end
    if bans[player] == nil 
    then       
-	   return true 
+	   result = true
    end   
    if bans[player].data == nil 
    then      
-	   return true
+	   result = true
+   end
+
+   local count = 0  
+   for i,v in pairs (bans[player].data) do      
+       if bans[player].data[i].cou < warnings_before_ban
+		  then 
+              count = count+1
+		  end		  	      	  
    end
    
-   for i,v in pairs (bans[player].data) do      
-	  if v.own == owner 
-	  then
-	      if bans[player].data[i].cou < 10
-		  then 
-		      if really_unban then 
-			    minetest.unban_player_or_ip(player)
-			  else
-			      local unban = true
-			      notify_trusted(player, unban)
-              end
-		  end		  
-	      return true
-	  end
-   end    
-   return false
+   if #bans[player].data == count then
+      result = true
+   	  if really_unban then 
+	     minetest.unban_player_or_ip(player)
+	  else
+		  local message = "No one seems to be against " .. player .. " anymore."
+		  notify_trusted(message)
+      end
+   end
+   return result
 end
 
 -- remember good old minetest.item_place 
 old_place = minetest.item_place
 
 -- 'cause we would override that to set "ownership"
-function minetest.item_place(itemstack, placer, pointed_thing)    
-	if placer:get_wielded_item():is_empty() then return end				
-    local pos = pointed_thing.above
-    if check_ownership(pos, placer)
+function minetest.item_place(itemstack, placer, pointed_thing)  
+--	if placer:get_wielded_item():is_empty() then return end				
+	if pointed_thing.type ~= 'nothing' then
+	   if pointed_thing.type == 'node' then
+	      pos = pointed_thing.above
+	   end
+	end
+	if pos == nil then minetest.chat_send_all("pos is nil??!") return end
+	
+	local can,adj = check_ownership(pos, placer)
+    if can 
 	then	    
 		local count = itemstack:get_count()
 	 	local name = itemstack:get_name()
@@ -527,10 +619,14 @@ function minetest.item_place(itemstack, placer, pointed_thing)
         if set_infotext then meta:set_string("infotext","Owned by " .. placer:get_player_name()) end
 		return itemstack
 	else
-           local pos = pointed_thing.under
-           local meta = minetest.env:get_meta(pos)
-           local owner = meta:get_string("owner") or "someone"     
+	    local line = ""
+		for i,v in ipairs(adj)  do		
+	       line = line .. v .. ", "
+		end   
+		minetest.chat_send_all(line)
            local name = placer:get_player_name()
+		   local meta = minetest.env:get_meta(pos)
+		   local owner = meta:set_string("owner",placer:get_player_name())
            local x = give_a_warning_or_ban(name,owner)
            if show_messages then
                minetest.chat_send_player(name,x.message)
@@ -870,7 +966,7 @@ minetest.register_chatcommand("forgive", {
             end                    
             forgive(name,param)
             minetest.chat_send_all(name .. " forgave " ..  param .. ".")
-            minetest.log("action", name .. " forgave " ..  param .. ".")
+--            minetest.log("action", name .. " forgave " ..  param .. ".")
             return        
 		end
     end
@@ -896,7 +992,7 @@ minetest.register_chatcommand("area_grant", {
 			"(".. minetest.pos_to_string(ex_pos[name].pos1) .. " " .. minetest.pos_to_string(ex_pos[name].pos2) .. ")."
 			create_exception(name, param, ex_pos[name].pos1, ex_pos[name].pos2)
             minetest.chat_send_all(m)
-            minetest.log("action", m)
+--            minetest.log("action", m)
             return        
 		end
     end
@@ -922,7 +1018,7 @@ minetest.register_chatcommand("area_revoke", {
 			"(".. minetest.pos_to_string(ex_pos[name].pos1) .. " " .. minetest.pos_to_string(ex_pos[name].pos2) .. ")."
             remove_exception(name, param, ex_pos[name].pos1, ex_pos[name].pos2)			
             minetest.chat_send_all(m)
-            minetest.log("action", m)
+--            minetest.log("action", m)
             return        
 		end
     end
@@ -951,7 +1047,7 @@ minetest.register_chatcommand("area_grant_all", {
 			local m = name .. " granted area interact to everyone "..
 			"(".. minetest.pos_to_string(ex_pos[name].pos1) .. " " .. minetest.pos_to_string(ex_pos[name].pos2) .. ")."
             minetest.chat_send_all(m)
-            minetest.log("action", m)
+--            minetest.log("action", m)
             return        
 		end
     end
@@ -980,7 +1076,7 @@ minetest.register_chatcommand("area_revoke_all", {
 			local m = name .. " revoked area interact to everyone "..
 			"(".. minetest.pos_to_string(ex_pos[name].pos1) .. " " .. minetest.pos_to_string(ex_pos[name].pos2) .. ")."
             minetest.chat_send_all(m)
-            minetest.log("action", m)
+--            minetest.log("action", m)
             return        
 		end
     end
@@ -1020,7 +1116,7 @@ minetest.register_chatcommand("vote", {
             end            
             save_stuff()
             minetest.chat_send_all(name .. " voted for " ..  param .. ".")
-            minetest.log("action", name .. " voted for " ..  param .. ".")
+--            minetest.log("action", name .. " voted for " ..  param .. ".")
             return        
 		end
     end
@@ -1057,7 +1153,7 @@ minetest.register_chatcommand("devote", {
             end
             save_stuff()
             minetest.chat_send_all(name .. " don't trust " ..  param .. " anymore.")
-            minetest.log("action", name .. " don't trust " ..  param .. " anymore.")
+--            minetest.log("action", name .. " don't trust " ..  param .. " anymore.")
             return        
 		end
     end
