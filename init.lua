@@ -14,10 +14,10 @@ Also thanks to Rubenwardy from minetest.net, who made a function to check whethe
 
 -- some settings:
 -- one can disable some messages by setting this to false
-local show_messages = false
+local show_messages = true
 -- defines whether infotext should be set on_after_place
 -- if true, then all blocks would have "Owner is USERNAME" tip. Handy, but annoying.
-local set_infotext = true
+local set_infotext = false
 -- if true, then player will be banned.
 -- otherwise server owner & trusted players will be notified
 local really_ban = false
