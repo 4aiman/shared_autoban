@@ -14,7 +14,7 @@ Also thanks to Rubenwardy from minetest.net, who made a function to check whethe
 
 -- some settings:
 -- one can disable some messages by setting this to false
-local show_messages = true
+local show_messages = false
 -- defines whether infotext should be set on_after_place
 -- if true, then all blocks would have "Owner is USERNAME" tip. Handy, but annoying.
 local set_infotext = true
@@ -174,27 +174,28 @@ function check_for_super_tool(player)
 end
 
 -- check for ownership at given pos only
-function check_ownership_once(pos, pl)   
-   local pos1 = pos
-   if pos1 == nil then minetest.chat_send_all("check_ownership_once pos is nil??!") return end
-   local meta = minetest.env:get_meta(pos1)
+function check_ownership_once(pos, pl)  
+   local meta = minetest.env:get_meta(pos)
    if meta == nil then return true end
    if meta:get_string("owner") == pl:get_player_name()
    or meta:get_string("owner") == nil
    or meta:get_string("owner") == ""
-   or minetest.env:get_node(pos1).name == "air"
+   or minetest.env:get_node(pos).name == "air"
    or check_exception(meta:get_string("owner"), pl:get_player_name(), pos)
    or check_for_super_tool(pl)
    then
       return true -- if it's not ours
    else
+      minetest.debug(minetest.serialize(pos) .. " - owner is "..meta:get_string("owner"))   
       return false,meta:get_string("owner")  -- if it IS ours
    end 
 end
 
 -- check for ownership at positions adjacent to pos
 -- no diagonal, though - it would be unjust to claim those too
+-- no cycles to make this as fast as "assign & call"
 function check_ownership(pos, placer)
+     minetest.debug("\n check begin...")		    
     local phoney_pos_01 = {x = pos.x-1, y = pos.y-1, z = pos.z-1}
     local phoney_pos_02 = {x = pos.x  , y = pos.y-1, z = pos.z-1}
     local phoney_pos_03 = {x = pos.x+1, y = pos.y-1, z = pos.z-1}
@@ -228,7 +229,6 @@ function check_ownership(pos, placer)
 
     local list = {}    	
     phoney_pos_01,_01 = check_ownership_once(phoney_pos_01, placer)
-	if phoney_pos_01 == nil then minetest.debug("check_ownership pos is nil??!") return end		    
 	phoney_pos_02,_02 = check_ownership_once(phoney_pos_02, placer)
     phoney_pos_03,_03 = check_ownership_once(phoney_pos_03, placer)
     phoney_pos_04,_04 = check_ownership_once(phoney_pos_04, placer)
@@ -242,7 +242,7 @@ function check_ownership(pos, placer)
     phoney_pos_12,_12 = check_ownership_once(phoney_pos_12, placer)
     phoney_pos_13,_13 = check_ownership_once(phoney_pos_13, placer)
 --
-    phoney_pos_15,_15 = check_ownership_once(phoney_pos_14, placer)
+    phoney_pos_15,_15 = check_ownership_once(phoney_pos_15, placer)
     phoney_pos_16,_16 = check_ownership_once(phoney_pos_16, placer)
     phoney_pos_17,_17 = check_ownership_once(phoney_pos_17, placer)
     phoney_pos_18,_18 = check_ownership_once(phoney_pos_18, placer)
@@ -283,13 +283,37 @@ function check_ownership(pos, placer)
 	list[25] = _25
 	list[26] = _26
     list[27] = _27
-	
-    if  phoney_pos_left
-	and phoney_pos_righ
-    and phoney_pos_back
-    and phoney_pos_forv
-    and phoney_pos_uppe
-    and phoney_pos_bott
+
+    minetest.debug("\n check end...")
+     	
+    if  phoney_pos_01
+	and phoney_pos_02
+	and phoney_pos_03
+	and phoney_pos_04
+	and phoney_pos_05
+	and phoney_pos_06
+	and phoney_pos_07
+	and phoney_pos_08
+	and phoney_pos_09
+	and phoney_pos_10
+	and phoney_pos_11
+	and phoney_pos_12
+	and phoney_pos_13
+--14
+	and phoney_pos_15
+	and phoney_pos_16
+	and phoney_pos_17
+	and phoney_pos_18
+	and phoney_pos_19
+	and phoney_pos_20
+	and phoney_pos_21
+	and phoney_pos_22
+	and phoney_pos_23
+	and phoney_pos_24
+	and phoney_pos_25
+	and phoney_pos_26
+	and phoney_pos_27
+
 	then return true, list
 	else return false,list
 	end
@@ -595,10 +619,10 @@ function check_for_unban_possibility(player)
 end
 
 -- remember good old minetest.item_place 
-old_place = minetest.item_place
+old_place = minetest.item_place_node
 
 -- 'cause we would override that to set "ownership"
-function minetest.item_place(itemstack, placer, pointed_thing)  
+function minetest.item_place_node(itemstack, placer, pointed_thing)  
 --	if placer:get_wielded_item():is_empty() then return end				
 	if pointed_thing.type ~= 'nothing' then
 	   if pointed_thing.type == 'node' then
@@ -606,7 +630,6 @@ function minetest.item_place(itemstack, placer, pointed_thing)
 	   end
 	end
 	if pos == nil then minetest.chat_send_all("pos is nil??!") return end
-	
 	local can,adj = check_ownership(pos, placer)
     if can 
 	then	    
@@ -633,8 +656,7 @@ function minetest.item_place(itemstack, placer, pointed_thing)
            end 
            if x.ban then
               ban_him_or_her(name)                        
-           end
-           
+           end    
 		return 
     end			
 end
