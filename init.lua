@@ -206,7 +206,7 @@ function check_ownership_once(pos, pl)
    then
       return true -- if it's not ours
    else
-      minetest.debug(minetest.serialize(pos) .. " - owner is "..meta:get_string("owner"))   
+--      minetest.debug(minetest.serialize(pos) .. " - owner is "..meta:get_string("owner"))   
       return false,meta:get_string("owner")  -- if it IS ours
    end 
 end
@@ -215,7 +215,7 @@ end
 -- no diagonal, though - it would be unjust to claim those too
 -- no cycles to make this as fast as "assign & call"
 function check_ownership(pos, placer)
-     minetest.debug("\n check begin...")		    
+--     minetest.debug("\n check begin...")		    
     local phoney_pos_01 = {x = pos.x-1, y = pos.y-1, z = pos.z-1}
     local phoney_pos_02 = {x = pos.x  , y = pos.y-1, z = pos.z-1}
     local phoney_pos_03 = {x = pos.x+1, y = pos.y-1, z = pos.z-1}
@@ -306,7 +306,7 @@ function check_ownership(pos, placer)
     
     list =  remove_duplicates(list)
     
-    minetest.debug("\n check end...\nlist = " .. minetest.serialize(list))
+--    minetest.debug("\n check end...\nlist = " .. minetest.serialize(list))
      	
     if  phoney_pos_01
 	and phoney_pos_02
@@ -651,7 +651,7 @@ function minetest.item_place_node(itemstack, placer, pointed_thing)
 	      pos = pointed_thing.above
 	   end
 	end
-	if pos == nil then minetest.chat_send_all("pos is nil??!") return end
+--	if pos == nil then minetest.chat_send_all("pos is nil??!") return end
 	local can,adj = check_ownership(pos, placer)
     if can 
 	then	    
