@@ -28,7 +28,7 @@ local really_unban = false
 -- needed by a player to use super pickaxes
 local min_trust_level = 80
 -- this value shows how many times one will be warned before banned 
-local warnings_before_ban = 100000
+local warnings_before_ban = 20
 
 -- some lists:
 -- used for storing number of griefing attempt
@@ -82,6 +82,25 @@ function can_vote(who,for_who)
        end                
    end
    return true                   
+end
+
+--removes identical items from a list
+function remove_duplicates(list)
+   local tmp = {}   
+   for i,v in pairs(list) do       
+       local f = false
+       for j,k in pairs(tmp) do
+           if k==v then
+              f = true
+           end
+       end
+       if not f then
+          local h = #tmp+1
+          tmp[h] = v
+          --minetest.debug("\n".. v ..":  "..minetest.serialize(tmp[h]))                  
+       end       
+   end
+   return tmp
 end
 
 -- some messages:
@@ -155,10 +174,11 @@ end
 
 -- check whether super tool is in the player's hands...
 function check_for_super_tool(player)    
-	if (player:get_wielded_item():get_name()== "shared_autoban:admin_pick_wood")
+	if ((player:get_wielded_item():get_name()== "shared_autoban:admin_pick_wood")
 	or (player:get_wielded_item():get_name()== "shared_autoban:admin_pick_stone")
 	or (player:get_wielded_item():get_name()== "shared_autoban:admin_pick_steel")
 	or (player:get_wielded_item():get_name()== "shared_autoban:admin_pick_mese")
+	and true)
 	then 	
 	    local pl_num = table.getn(get_registred_players())	
 	    player = player:get_player_name() 
@@ -283,8 +303,10 @@ function check_ownership(pos, placer)
 	list[25] = _25
 	list[26] = _26
     list[27] = _27
-
-    minetest.debug("\n check end...")
+    
+    list =  remove_duplicates(list)
+    
+    minetest.debug("\n check end...\nlist = " .. minetest.serialize(list))
      	
     if  phoney_pos_01
 	and phoney_pos_02
@@ -642,21 +664,22 @@ function minetest.item_place_node(itemstack, placer, pointed_thing)
         if set_infotext then meta:set_string("infotext","Owned by " .. placer:get_player_name()) end
 		return itemstack
 	else
-	    local line = ""
+--	    local line = ""
+        local name = placer:get_player_name()
 		for i,v in ipairs(adj)  do		
-	       line = line .. v .. ", "
-		end   
-		minetest.chat_send_all(line)
-           local name = placer:get_player_name()
-		   local meta = minetest.env:get_meta(pos)
-		   local owner = meta:set_string("owner",placer:get_player_name())
-           local x = give_a_warning_or_ban(name,owner)
+--	       line = line .. v .. ", "
+           local x = give_a_warning_or_ban(name,v)
            if show_messages then
                minetest.chat_send_player(name,x.message)
            end 
            if x.ban then
               ban_him_or_her(name)                        
            end    
+		end   
+--		minetest.chat_send_all(line)
+--		   local meta = minetest.env:get_meta(pos)
+--		   local owner = meta:set_string("owner",placer:get_player_name())
+--           local x = give_a_warning_or_ban(name,owner)
 		return 
     end			
 end
